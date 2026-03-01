@@ -162,9 +162,9 @@
   <!-- ===== TECH STACK — ROW 2 (AI + Security + Advanced) ===== -->
   <g transform="translate(550, 516)" font-family="'Segoe UI',Arial,sans-serif" font-size="10" font-weight="700" text-anchor="middle">
     <!-- AIOps (featured neon) -->
-    <g transform="translate(-440,0)" filter="url(#softGlow)"><rect x="-34" y="-13" width="68" height="26" rx="13" fill="#052E20" stroke="url(#mintGlow)" stroke-width="1.3"/><text y="4" fill="#34D399" font-weight="800">AIOps</text></g>
+    <g transform="translate(-440,0)" filter="url(#bigGlow)"><rect x="-34" y="-13" width="68" height="26" rx="13" fill="#0A2E1F" stroke="#34D399" stroke-width="2"/><rect x="-34" y="-13" width="68" height="26" rx="13" fill="#34D399" opacity="0.15"/><text y="4" fill="#34D399" font-weight="900" font-size="11">AIOps</text></g>
     <!-- GenAI -->
-    <g transform="translate(-362,0)" filter="url(#softGlow)"><rect x="-30" y="-13" width="60" height="26" rx="13" fill="#052E20" stroke="url(#mintGlow)" stroke-width="1.3"/><text y="4" fill="#06B6D4" font-weight="800">GenAI</text></g>
+    <g transform="translate(-362,0)" filter="url(#bigGlow)"><rect x="-30" y="-13" width="60" height="26" rx="13" fill="#0A1E2E" stroke="#22D3EE" stroke-width="2"/><rect x="-30" y="-13" width="60" height="26" rx="13" fill="#22D3EE" opacity="0.15"/><text y="4" fill="#22D3EE" font-weight="900" font-size="11">GenAI</text></g>
     <!-- DevSecOps -->
     <g transform="translate(-280,0)"><rect x="-44" y="-13" width="88" height="26" rx="13" fill="#1C0F14" stroke="url(#hotPink)" stroke-width="0.8"/><text y="4" fill="#F43F5E">DevSecOps</text></g>
     <g transform="translate(-196,0)"><rect x="-24" y="-13" width="48" height="26" rx="13" fill="#0F1729" stroke="#10B981" stroke-width="0.8"/><text y="4" fill="#10B981">SRE</text></g>
