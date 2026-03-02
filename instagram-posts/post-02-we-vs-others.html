@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite DevOps Pro - We vs Others</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #111;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .post {
+            width: 1080px;
+            height: 1080px;
+            background: linear-gradient(160deg, #0a0a0a, #1a1a2e);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 60px;
+        }
+
+        .post::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #ff4444, #00d4ff);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .brand-icon {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 900;
+            color: white;
+        }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .headline {
+            font-size: 44px;
+            font-weight: 900;
+            color: #fff;
+            margin-bottom: 40px;
+            line-height: 1.15;
+        }
+
+        .headline span {
+            color: #00d4ff;
+        }
+
+        .comparison {
+            flex: 1;
+            display: flex;
+            gap: 30px;
+        }
+
+        .col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .col-header {
+            font-size: 20px;
+            font-weight: 800;
+            padding: 14px 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .col-header.bad {
+            background: rgba(255, 68, 68, 0.15);
+            color: #ff4444;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+        }
+
+        .col-header.good {
+            background: rgba(0, 212, 255, 0.15);
+            color: #00d4ff;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .row {
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            line-height: 1.3;
+        }
+
+        .row.bad {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: line-through;
+            text-decoration-color: rgba(255, 68, 68, 0.5);
+        }
+
+        .row.good {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.15);
+            color: #fff;
+        }
+
+        .row-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .divider {
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.1), transparent);
+            margin: 0 5px;
+        }
+
+        .cta-bar {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .cta {
+            background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+            color: #fff;
+            font-size: 20px;
+            font-weight: 700;
+            padding: 18px 45px;
+            border-radius: 50px;
+            display: inline-block;
+            letter-spacing: 0.5px;
+            box-shadow: 0 8px 30px rgba(0, 212, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="post">
+        <div class="brand">
+            <div class="brand-icon">E</div>
+            <div class="brand-name">ELITE DEVOPS PRO</div>
+        </div>
+
+        <div class="headline">Other Institutes <span>vs</span> Us 🔥</div>
+
+        <div class="comparison">
+            <div class="col">
+                <div class="col-header bad">❌ OTHERS</div>
+                <div class="row bad"><span class="row-icon">❌</span> Course done. Good luck!</div>
+                <div class="row bad"><span class="row-icon">❌</span> No resume help</div>
+                <div class="row bad"><span class="row-icon">❌</span> No profile support</div>
+                <div class="row bad"><span class="row-icon">❌</span> No mock interviews</div>
+                <div class="row bad"><span class="row-icon">❌</span> Learn from PPT slides</div>
+                <div class="row bad"><span class="row-icon">❌</span> Certificate & goodbye</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="col">
+                <div class="col-header good">✅ ELITE DEVOPS PRO</div>
+                <div class="row good"><span class="row-icon">✅</span> Stay till you're PLACED</div>
+                <div class="row good"><span class="row-icon">✅</span> ATS-optimized resume</div>
+                <div class="row good"><span class="row-icon">✅</span> LinkedIn + Naukri built for you</div>
+                <div class="row good"><span class="row-icon">✅</span> Weekly mock interviews</div>
+                <div class="row good"><span class="row-icon">✅</span> Real-time projects only</div>
+                <div class="row good"><span class="row-icon">✅</span> Job referrals + freelancing</div>
+            </div>
+        </div>
+
+        <div class="cta-bar">
+            <div class="cta">📩 DM "READY" — NEXT BATCH STARTING SOON</div>
+        </div>
+    </div>
+</body>
+</html>

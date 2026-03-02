@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite DevOps Pro - Freelancing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #111;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .post {
+            width: 1080px;
+            height: 1080px;
+            background: linear-gradient(160deg, #0a1628, #0d2137, #0a1628);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 65px;
+        }
+
+        .globe-bg {
+            position: absolute;
+            width: 700px;
+            height: 700px;
+            border: 1px solid rgba(0, 212, 255, 0.05);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .globe-bg::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border: 1px solid rgba(0, 212, 255, 0.08);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .globe-bg::after {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border: 1px solid rgba(0, 212, 255, 0.1);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .glow-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #00d4ff, #00e5a0, #ffd700);
+        }
+
+        .brand {
+            position: absolute;
+            top: 40px;
+            left: 60px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 3;
+        }
+
+        .brand-icon {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #00d4ff, #7b2ff7);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: 900;
+            color: white;
+        }
+
+        .brand-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: 2px;
+        }
+
+        .content {
+            z-index: 2;
+            text-align: center;
+            width: 100%;
+        }
+
+        .top-tag {
+            display: inline-block;
+            background: rgba(0, 229, 160, 0.1);
+            border: 1px solid rgba(0, 229, 160, 0.3);
+            color: #00e5a0;
+            padding: 10px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+        }
+
+        .headline {
+            font-size: 52px;
+            font-weight: 900;
+            color: #fff;
+            line-height: 1.15;
+            margin-bottom: 12px;
+        }
+
+        .headline span {
+            background: linear-gradient(90deg, #00e5a0, #00d4ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sub {
+            font-size: 22px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 50px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            max-width: 850px;
+            margin: 0 auto 50px;
+            text-align: left;
+        }
+
+        .feature {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            padding: 20px 24px;
+        }
+
+        .feature-icon {
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .feature-content {}
+
+        .feature-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .feature-desc {
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .earning {
+            background: rgba(255, 215, 0, 0.08);
+            border: 2px solid rgba(255, 215, 0, 0.2);
+            border-radius: 16px;
+            padding: 25px 50px;
+            display: inline-block;
+            margin-bottom: 40px;
+        }
+
+        .earning-label {
+            font-size: 14px;
+            color: rgba(255,255,255,0.4);
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+
+        .earning-amount {
+            font-size: 42px;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ffd700, #ff6b35);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .earning-note {
+            font-size: 14px;
+            color: rgba(255,255,255,0.35);
+        }
+
+        .cta {
+            background: linear-gradient(135deg, #00e5a0, #00d4ff);
+            color: #000;
+            font-size: 22px;
+            font-weight: 800;
+            padding: 20px 50px;
+            border-radius: 50px;
+            display: inline-block;
+            box-shadow: 0 10px 40px rgba(0, 229, 160, 0.3);
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 35px;
+            color: rgba(255,255,255,0.3);
+            font-size: 15px;
+            z-index: 2;
+        }
+
+        .footer span { color: #00e5a0; }
+
+        .flags {
+            position: absolute;
+            top: 40px;
+            right: 60px;
+            font-size: 30px;
+            letter-spacing: 8px;
+            z-index: 3;
+        }
+    </style>
+</head>
+<body>
+    <div class="post">
+        <div class="glow-top"></div>
+        <div class="globe-bg"></div>
+
+        <div class="brand">
+            <div class="brand-icon">E</div>
+            <div class="brand-name">ELITE DEVOPS PRO</div>
+        </div>
+
+        <div class="flags">🇺🇸 🇬🇧 🇩🇪 🇫🇷</div>
+
+        <div class="content">
+            <div class="top-tag">💼 NEW OPPORTUNITY</div>
+
+            <div class="headline">
+                Earn in <span>Dollars & Euros</span><br>
+                Work from India 🇮🇳
+            </div>
+            <div class="sub">Freelancing with US & Europe Clients</div>
+
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🌐</div>
+                    <div class="feature-content">
+                        <div class="feature-title">Global Client Access</div>
+                        <div class="feature-desc">Direct projects from US/EU companies</div>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">💰</div>
+                    <div class="feature-content">
+                        <div class="feature-title">Earn in USD/EUR</div>
+                        <div class="feature-desc">3-5x more than Indian market rates</div>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🏠</div>
+                    <div class="feature-content">
+                        <div class="feature-title">Work from Home</div>
+                        <div class="feature-desc">Remote-first DevOps projects</div>
+                    </div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🛡️</div>
+                    <div class="feature-content">
+                        <div class="feature-title">We Connect You</div>
+                        <div class="feature-desc">Profile setup + client matching</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="earning">
+                <div class="earning-label">POTENTIAL MONTHLY EARNING</div>
+                <div class="earning-amount">$2,000 - $5,000+</div>
+                <div class="earning-note">Based on skill level & project scope</div>
+            </div>
+
+            <br><br>
+
+            <div class="cta">📩 DM "FREELANCE" TO KNOW MORE</div>
+        </div>
+
+        <div class="footer">@elitedevopspro • <span>Work Global. Earn Global.</span></div>
+    </div>
+</body>
+</html>
