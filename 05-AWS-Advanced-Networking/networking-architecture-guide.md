@@ -1,4 +1,4 @@
-# AWS Networking — Real-World Architecture Diagrams & Flow Explanations
+﻿# AWS Networking — Real-World Architecture Diagrams & Flow Explanations
 
 > Every diagram here represents how real companies build their AWS infrastructure. Explained from basic concepts to production-grade patterns so anyone — from day-1 fresher to experienced engineer — can follow along.
 
@@ -47,7 +47,7 @@
 │  │   │  Subnet: 10.0.1.0/24        │                         │  │
 │  │   │  (Public: Yes)               │                         │  │
 │  │   │                              │                         │  │
-│  │   │  🔒 EC2 Instance             │                         │  │
+│  │   │     EC2 Instance             │                         │  │
 │  │   │     (Web Server)             │                         │  │
 │  │   │     Public IP: 54.x.x.x     │                         │  │
 │  │   │              │               │                         │  │
@@ -57,7 +57,7 @@
 │  │   │  Subnet: 10.0.10.0/24       │                         │  │
 │  │   │  (Public: No)                │                         │  │
 │  │   │                              │                         │  │
-│  │   │  🔒 RDS Postgres Instance    │                         │  │
+│  │   │     RDS Postgres Instance    │                         │  │
 │  │   │     (No public IP)           │                         │  │
 │  │   │                              │                         │  │
 │  │   └──────────────────────────────┘                         │  │
@@ -130,7 +130,7 @@ Step 1:  User's browser → Internet → Internet Gateway (IGW)
 Step 2:  IGW checks → Is there a route? → Route table says 10.0.0.0/16 is local
          "The doorman checks if the shop is open."
 
-Step 3:  Traffic hits Security Group (web-sg) → Port 80 allowed? → YES ✅
+Step 3:  Traffic hits Security Group (web-sg) → Port 80 allowed? → YES +
          "The security guard checks: 'Are customers allowed in?' Yes."
 
 Step 4:  Traffic reaches EC2 instance → Nginx serves the web page
@@ -139,7 +139,7 @@ Step 4:  Traffic reaches EC2 instance → Nginx serves the web page
 Step 5:  EC2 needs data → Connects to RDS on port 5432 (within the VPC)
          "The shopkeeper walks to the back room to get the item."
 
-Step 6:  Traffic hits db-sg → Is source web-sg? → YES ✅ → Port 5432 allowed? → YES ✅
+Step 6:  Traffic hits db-sg → Is source web-sg? → YES + → Port 5432 allowed? → YES +
          "The back room guard checks: 'Are you the shopkeeper?' Yes. Door opens."
 
 Step 7:  RDS returns data → EC2 sends response → IGW → Internet → User
@@ -209,14 +209,14 @@ Step 7:  RDS returns data → EC2 sends response → IGW → Internet → User
 │  │  ┌───────────────────────────┐  │  │  ┌───────────────────────────┐   │     │
 │  │  │ Subnet: 10.0.10.0/24     │  │  │  │ Subnet: 10.0.20.0/24     │   │     │
 │  │  │ (Public: No) — WEB TIER  │  │  │  │ (Public: No) — WEB TIER  │   │     │
-│  │  │   🔒 EC2: Nginx          │  │  │  │   🔒 EC2: Nginx          │   │     │
+│  │  │      EC2: Nginx          │  │  │  │      EC2: Nginx          │   │     │
 │  │  │      (Reverse Proxy)     │  │  │  │      (Reverse Proxy)     │   │     │
 │  │  └─────────────┬─────────────┘  │  │  └─────────────┬─────────────┘   │     │
 │  │                │                │  │                │                 │     │
 │  │  ┌─────────────▼─────────────┐  │  │  ┌─────────────▼─────────────┐   │     │
 │  │  │ Subnet: 10.0.30.0/24     │  │  │  │ Subnet: 10.0.40.0/24     │   │     │
 │  │  │ (Public: No) — APP TIER  │  │  │  │ (Public: No) — APP TIER  │   │     │
-│  │  │   🔒 EC2: Node.js /      │  │  │  │   🔒 EC2: Node.js /      │   │     │
+│  │  │      EC2: Node.js /      │  │  │  │      EC2: Node.js /      │   │     │
 │  │  │      Python / Java       │  │  │  │      Python / Java       │   │     │
 │  │  │      (API Backend)       │  │  │  │      (API Backend)       │   │     │
 │  │  └─────────────┬─────────────┘  │  │  └─────────────┬─────────────┘   │     │
@@ -224,8 +224,8 @@ Step 7:  RDS returns data → EC2 sends response → IGW → Internet → User
 │  │  ┌─────────────▼─────────────┐  │  │  ┌─────────────▼─────────────┐   │     │
 │  │  │ Subnet: 10.0.100.0/24    │  │  │  │ Subnet: 10.0.200.0/24    │   │     │
 │  │  │ (Public: No) — DATA TIER │  │  │  │ (Public: No) — DATA TIER │   │     │
-│  │  │   🔒 RDS Primary (Write) │──┼──┼──│   🔒 RDS Standby (Read)  │   │     │
-│  │  │   🔒 ElastiCache Primary │──┼──┼──│   🔒 ElastiCache Replica │   │     │
+│  │  │      RDS Primary (Write) │──┼──┼──│      RDS Standby (Read)  │   │     │
+│  │  │      ElastiCache Primary │──┼──┼──│      ElastiCache Replica │   │     │
 │  │  └───────────────────────────┘  │  │  └───────────────────────────┘   │     │
 │  │                                 │  │                                   │     │
 │  └─────────────────────────────────┘  └───────────────────────────────────┘     │
@@ -350,7 +350,7 @@ app-sg          → Allows 8080 from web-sg ONLY
 db-sg           → Allows 5432 from app-sg ONLY
 cache-sg        → Allows 6379 from app-sg ONLY
 
-❌ A hacker who compromises the ALB cannot directly reach the database —
+X A hacker who compromises the ALB cannot directly reach the database —
    they must breach EACH layer one by one.
 ```
 
@@ -391,18 +391,18 @@ cache-sg        → Allows 6379 from app-sg ONLY
 │  │  │ Subnet: 10.0.10.0/24        │  │  │  │ Subnet: 10.0.20.0/24        │  │   │
 │  │  │ (Public: No)                 │  │  │  │ (Public: No)                 │  │   │
 │  │  │                              │  │  │  │                              │  │   │
-│  │  │  🔒 EC2: App Server #1      │  │  │  │  🔒 EC2: App Server #2      │  │   │
-│  │  │     (Running) ✅             │  │  │  │     (Running) ✅             │  │   │
+│  │  │     EC2: App Server #1      │  │  │  │     EC2: App Server #2      │  │   │
+│  │  │     (Running) +             │  │  │  │     (Running) +             │  │   │
 │  │  └──────────────┬───────────────┘  │  │  └──────────────┬───────────────┘  │   │
 │  │                 │                  │  │                 │                  │   │
 │  │  ┌──────────────▼───────────────┐  │  │  ┌──────────────▼───────────────┐  │   │
 │  │  │ Subnet: 10.0.100.0/24       │  │  │  │ Subnet: 10.0.200.0/24       │  │   │
 │  │  │ (Public: No)                 │  │  │  │ (Public: No)                 │  │   │
 │  │  │                              │  │  │  │                              │  │   │
-│  │  │  🔒 RDS: PRIMARY        ✅  │══╪══╪══│  🔒 RDS: STANDBY        🟡  │  │   │
+│  │  │     RDS: PRIMARY        +  │══╪══╪══│     RDS: STANDBY        ~   │  │   │
 │  │  │     (Writes + Reads)         │sync│  │     (Auto-failover)          │  │   │
 │  │  │                              │  │  │  │                              │  │   │
-│  │  │  🔒 ElastiCache: Primary    │══╪══╪══│  🔒 ElastiCache: Replica    │  │   │
+│  │  │     ElastiCache: Primary    │══╪══╪══│     ElastiCache: Replica    │  │   │
 │  │  │                              │sync│  │                              │  │   │
 │  │  └──────────────────────────────┘  │  │  └──────────────────────────────┘  │   │
 │  │                                    │  │                                    │   │
@@ -470,11 +470,11 @@ BEFORE FAILURE:
   ALB → sends 50% traffic to AZ-a, 50% to AZ-b
   RDS Primary in AZ-a, Standby in AZ-b
 
-🔥 AZ-a DATA CENTER GOES DOWN! (power outage, earthquake, etc.)
+** AZ-a DATA CENTER GOES DOWN! (power outage, earthquake, etc.)
 
 WITHIN 30 SECONDS:
   1. ALB health check detects AZ-a servers are unreachable
-  2. ALB stops sending traffic to AZ-a → ALL traffic goes to AZ-b ✅
+  2. ALB stops sending traffic to AZ-a → ALL traffic goes to AZ-b +
   3. RDS detects primary is down → promotes standby to PRIMARY (60-120 seconds)
   4. ElastiCache replica becomes primary
 
@@ -523,7 +523,7 @@ WHEN AZ-a RECOVERS:
 │  │  ┌──────────────────────────────────────────────────────────────────┐   │   │
 │  │  │  Subnet: 10.0.1.0/24  (Public: Yes)                              │   │   │
 │  │  │                                                                  │   │   │
-│  │  │  🔒 NAT Gateway           🔒 Bastion Host (Jump Box)           │   │   │
+│  │  │     NAT Gateway              Bastion Host (Jump Box)           │   │   │
 │  │  │     Has Elastic IP            For SSH access to private EC2s    │   │   │
 │  │  │     (public)                                                    │   │   │
 │  │  └──────────────┬───────────────────────────────────────────────────┘   │   │
@@ -531,7 +531,7 @@ WHEN AZ-a RECOVERS:
 │  │  ┌──────────────▼───────────────────────────────────────────────────┐   │   │
 │  │  │  Subnet: 10.0.10.0/24  (Public: No)                              │   │   │
 │  │  │                                                                  │   │   │
-│  │  │  🔒 EC2: App Server          🔒 EC2: Worker                    │   │   │
+│  │  │     EC2: App Server             EC2: Worker                    │   │   │
 │  │  │     Needs to:                     Needs to:                     │   │   │
 │  │  │     - apt update                  - Call APIs                   │   │   │
 │  │  │     - pip install                 - Send email                  │   │   │
@@ -608,7 +608,7 @@ OUTBOUND (Private EC2 → Internet):
   private IP.
 
 INBOUND (Internet → Private EC2):
-  ❌ BLOCKED! The internet cannot initiate a connection to 10.0.10.5.
+  X BLOCKED! The internet cannot initiate a connection to 10.0.10.5.
   The NAT Gateway only allows responses to connections that the EC2 started.
   
   Think of it like a one-way mirror in a detective show:
@@ -696,19 +696,19 @@ INBOUND (Internet → Private EC2):
 ### VPC Peering — Critical Rules
 
 ```
-⚠️  RULE 1: CIDRs MUST NOT OVERLAP
-    VPC-A: 10.0.0.0/16  + VPC-B: 10.0.0.0/16  = ❌ CONFLICT (same range!)
-    VPC-A: 10.0.0.0/16  + VPC-B: 10.1.0.0/16  = ✅ No overlap
+!!  RULE 1: CIDRs MUST NOT OVERLAP
+    VPC-A: 10.0.0.0/16  + VPC-B: 10.0.0.0/16  = X CONFLICT (same range!)
+    VPC-A: 10.0.0.0/16  + VPC-B: 10.1.0.0/16  = + No overlap
 
-⚠️  RULE 2: NOT TRANSITIVE
+!!  RULE 2: NOT TRANSITIVE
     VPC-A ←→ VPC-B (peered)
     VPC-B ←→ VPC-C (peered)
-    VPC-A ←→ VPC-C = ❌ NOT connected (need separate peering or Transit Gateway)
+    VPC-A ←→ VPC-C = X NOT connected (need separate peering or Transit Gateway)
 
-⚠️  RULE 3: Both sides must ACCEPT
+!!  RULE 3: Both sides must ACCEPT
     Account A creates peering request → Account B must accept → Both update route tables
 
-⚠️  RULE 4: Route tables in BOTH VPCs must be updated
+!!  RULE 4: Route tables in BOTH VPCs must be updated
     Peering connection alone is not enough — you must tell each VPC how to route to the other.
 ```
 
@@ -747,12 +747,12 @@ Peering connections needed:
      │ VPC: PRODUCTION       │  │ VPC: DEVELOPMENT  │  │ VPC: SHARED         │
      │ 10.0.0.0/16           │  │ 10.1.0.0/16       │  │ SERVICES            │
      │                       │  │                   │  │ 10.2.0.0/16         │
-     │  🔒 Web Servers        │  │  🔒 Dev Servers   │  │                     │
-     │  🔒 API Servers        │  │  🔒 Test DBs      │  │  🔒 NAT Gateway     │
-     │  🔒 Prod RDS           │  │  🔒 CI/CD Runners │  │  🔒 Bastion Host    │
-     │                       │  │                   │  │  🔒 VPN Endpoint    │
-     │  🔒 Prod → Shared only │  │  ❌ Dev CANNOT    │  │  🔒 DNS Resolver    │
-     │                       │  │    reach Prod!   │  │  🔒 Monitoring      │
+     │     Web Servers        │  │     Dev Servers   │  │                     │
+     │     API Servers        │  │     Test DBs      │  │     NAT Gateway     │
+     │     Prod RDS           │  │     CI/CD Runners │  │     Bastion Host    │
+     │                       │  │                   │  │     VPN Endpoint    │
+     │     Prod → Shared only │  │  X Dev CANNOT    │  │     DNS Resolver    │
+     │                       │  │    reach Prod!   │  │     Monitoring      │
      └───────────────────────┘  └───────────────────┘  └─────────────┬───────┘
                                                                 │
                                                       ┌────────▼────────┐
@@ -801,8 +801,8 @@ Without isolation:
   Dev → TGW → Prod  ← A developer's bug or test script could hit production DB!
 
 With TGW route table isolation:
-  Dev → TGW → Dev-RT → ❌ No route to Prod CIDR → Packet dropped!
-  Dev → TGW → Dev-RT → ✅ Route to Shared Services → Can reach NAT/Bastion
+  Dev → TGW → Dev-RT → X No route to Prod CIDR → Packet dropped!
+  Dev → TGW → Dev-RT → + Route to Shared Services → Can reach NAT/Bastion
 
 This is how enterprises prevent dev/test from accidentally impacting production.
 ```
@@ -1003,11 +1003,11 @@ WITH centralized egress through Shared VPC:
 │    │                                         │                          │
 │    └─────────────────────────────────────────┘                          │
 │                                                                         │
-│  ❌ NO NAT Gateway needed! ❌ NO Internet Gateway needed!               │
-│  ✅ Traffic stays 100% within AWS private network                       │
-│  ✅ More secure — data never touches the public internet                │
-│  ✅ Lower latency — fewer network hops                                  │
-│  ✅ Cost savings — no NAT data processing charges                       │
+│  X NO NAT Gateway needed! X NO Internet Gateway needed!               │
+│  + Traffic stays 100% within AWS private network                       │
+│  + More secure — data never touches the public internet                │
+│  + Lower latency — fewer network hops                                  │
+│  + Cost savings — no NAT data processing charges                       │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1153,7 +1153,7 @@ WITH S3 Gateway Endpoint:
 NORMAL OPERATION:
   Route 53 → Health check passes for us-east-1 → All traffic goes there
 
-🔥 us-east-1 GOES DOWN!
+** us-east-1 GOES DOWN!
 
   MINUTE 0:    Route 53 health check fails (3 consecutive failures)
   MINUTE 1:    Route 53 updates DNS → points to eu-west-1
@@ -1200,9 +1200,9 @@ NORMAL OPERATION:
 │  │  - Approves connection requests  │  │     │  │  - Calls the service privately  │  │
 │  └──────────────────────────────────┘  │     │  └──────────────────────────────────┘  │
 │                                        │     │                                        │
-│  ✅ Payment API is NEVER on internet   │     │  ✅ Order API talks to Payment API     │
-│  ✅ Only approved consumers connect   │     │     without EVER touching the internet │
-│  ✅ CIDR blocks can overlap!          │     │  ✅ Looks like a local private IP      │
+│  + Payment API is NEVER on internet   │     │  + Order API talks to Payment API     │
+│  + Only approved consumers connect   │     │     without EVER touching the internet │
+│  + CIDR blocks can overlap!          │     │  + Looks like a local private IP      │
 └────────────────────────────────────────┘     └────────────────────────────────────────┘
 ```
 
@@ -1302,9 +1302,9 @@ Company CIDR: 10.0.0.0/8 (whole 10.x.x.x range — 16M IPs)
   Shared Services:    10.3.0.0/16    (65,536 IPs)
   DR Region:          10.10.0.0/16   (65,536 IPs)
 
-  ✅ No overlapping CIDRs → All VPCs can peer or connect via Transit Gateway
-  ✅ Organized by environment → Easy to create firewall rules
-  ✅ Room to grow → Each VPC has 65K IPs
+  + No overlapping CIDRs → All VPCs can peer or connect via Transit Gateway
+  + Organized by environment → Easy to create firewall rules
+  + Room to grow → Each VPC has 65K IPs
 ```
 
 > **AWS reserves 5 IPs in every subnet:**
@@ -1363,16 +1363,16 @@ NACL (Network ACL) — Subnet Level Firewall
 
 ```
 STATEFUL (Security Group):
-  Request:   Client → Port 80 → EC2  (Inbound rule: ALLOW 80 ✅)
+  Request:   Client → Port 80 → EC2  (Inbound rule: ALLOW 80 +)
   Response:  EC2 → Client            (Automatically allowed — SG remembers the connection)
   
   You only write ONE rule (inbound). The response is handled automatically.
 
 STATELESS (NACL):
-  Request:   Client → Port 80 → EC2  (Inbound rule: ALLOW 80 ✅)
+  Request:   Client → Port 80 → EC2  (Inbound rule: ALLOW 80 +)
   Response:  EC2 → Client            (Outbound rule ALSO needed!
                                        EC2 responds on ephemeral port 1024-65535.
-                                       If outbound rule doesn't allow this → ❌ BLOCKED!)
+                                       If outbound rule doesn't allow this → X BLOCKED!)
   
   You must write TWO rules (inbound + outbound). NACL has no memory.
 ```
@@ -1399,9 +1399,9 @@ Step 2: Route table lookup (most specific match wins):
   │                                             │
   │  Destination      │  Target         │ Match? │
   │  ──────────────── │ ─────────────── │ ────── │
-  │  10.0.0.0/16      │  local          │ ❌ No  │  (Google IP not in 10.0.x.x range)
-  │  10.1.0.0/16      │  pcx-xxxxx      │ ❌ No  │  (Not in 10.1.x.x either)
-  │  0.0.0.0/0        │  nat-gw-xxxxx   │ ✅ Yes!│  (0.0.0.0/0 matches EVERYTHING)
+  │  10.0.0.0/16      │  local          │ X No  │  (Google IP not in 10.0.x.x range)
+  │  10.1.0.0/16      │  pcx-xxxxx      │ X No  │  (Not in 10.1.x.x either)
+  │  0.0.0.0/0        │  nat-gw-xxxxx   │ + Yes!│  (0.0.0.0/0 matches EVERYTHING)
   └─────────────────────────────────────────────┘
 
 Step 3: Packet is sent to NAT Gateway → Internet Gateway → Google
@@ -1545,7 +1545,7 @@ aws ec2 create-network-insights-path \
 ┌────────────────────────────────────────────────────────────────┐
 │                   AWS NETWORKING COSTS                          │
 │                                                                │
-│  ✅ FREE:                                                      │
+│  + FREE:                                                      │
 │  ├── VPC creation                                              │
 │  ├── Subnets, Route Tables, Security Groups, NACLs             │
 │  ├── Internet Gateway                                          │
@@ -1554,7 +1554,7 @@ aws ec2 create-network-insights-path \
 │  ├── Data transfer IN to AWS                                   │
 │  └── Data transfer within same AZ (same VPC)                   │
 │                                                                │
-│  💰 COSTS MONEY:                                               │
+│  $$ COSTS MONEY:                                               │
 │  ├── NAT Gateway: ~$32/month + $0.045/GB data processed        │
 │  ├── Transit Gateway: $0.05/hr per attachment + $0.02/GB       │
 │  ├── Interface Endpoints: ~$7/month per AZ + $0.01/GB          │
@@ -1565,7 +1565,7 @@ aws ec2 create-network-insights-path \
 │  ├── Data transfer between AZs: $0.01/GB each way              │
 │  └── Data transfer between regions: $0.02/GB                   │
 │                                                                │
-│  💡 COST-SAVING TIPS:                                          │
+│  >> COST-SAVING TIPS:                                          │
 │  ├── Use S3 Gateway Endpoint → avoid NAT data charges          │
 │  ├── Centralize NAT via Transit Gateway → 1 NAT instead of N  │
 │  ├── Use VPC Flow Logs → S3 (cheaper) not CloudWatch           │
