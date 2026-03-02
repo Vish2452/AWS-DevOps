@@ -75,6 +75,8 @@ Think of a Linux server as a **commercial building**:
 | **Cron & Scheduling** | `crontab, at, batch, systemd timers` |
 | **SSH & Security** | `ssh, ssh-keygen, ssh-copy-id, sshd_config, iptables, ufw, firewalld, fail2ban` |
 
+> **📖 [Full Commands Guide with Examples →](linux-commands-explained.md)** — Comprehensive command reference with real-world explanations and practical examples.
+
 ---
 
 ## Practical Tasks
