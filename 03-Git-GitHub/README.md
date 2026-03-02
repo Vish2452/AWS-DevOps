@@ -2,6 +2,8 @@
 
 > **Objective:** Master Git workflows, branching strategies, semantic versioning, and collaborative development patterns used in production teams.
 
+> **📖 [Full Git & GitHub Guide with Examples →](git-complete-guide.md)** — Comprehensive reference covering basics to advanced workflows: GitFlow, cherry-pick, hotfix, conventional commits, and real-world scenarios.
+
 ---
 
 ## 🌍 Real-World Analogy: Git is Like Google Docs + Time Machine
