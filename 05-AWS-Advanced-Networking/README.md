@@ -2,6 +2,8 @@
 
 > **Objective:** Design and implement production-grade multi-region network architecture. Networking is the #1 interview differentiator.
 
+> **📖 [Real-World Architecture Diagrams & Flow Guide →](networking-architecture-guide.md)** — 10 production architectures with step-by-step traffic flow explanations, CIDR design, troubleshooting checklist, and cost breakdown.
+
 ---
 
 ## 🌍 Real-World Analogy: Networking is Like a City's Road System
