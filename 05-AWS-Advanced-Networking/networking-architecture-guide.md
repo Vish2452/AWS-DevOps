@@ -36,58 +36,88 @@
 ### The Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                          VPC: 10.0.0.0/16                                   │
-│                          Region: us-east-1                                  │
-│                                                                             │
-│   ┌───────────────────────────────────────┐                                 │
-│   │        AZ: us-east-1a                 │                                 │
-│   │                                       │                                 │
-│   │   ┌─────────────────────────────┐     │                                 │
-│   │   │  PUBLIC SUBNET: 10.0.1.0/24│     │      ┌──────────────────┐       │
-│   │   │                             │     │      │ Security Group:  │       │
-│   │   │   ┌─────────────────┐       │     │      │ web-sg          │       │
-│   │   │   │  EC2 Instance   │       │     │      │                 │       │
-│   │   │   │  (Web Server)   │◄──────┼─────┼──────│ Inbound:        │       │
-│   │   │   │  Public IP:     │       │     │      │  HTTP  (80)  ✅│       │
-│   │   │   │  54.x.x.x      │       │     │      │  HTTPS (443) ✅│       │
-│   │   │   │                 │       │     │      │  SSH   (22)  🔒│       │
-│   │   │   └────────┬────────┘       │     │      │  (Your IP only)│       │
-│   │   │            │                │     │      │                 │       │
-│   │   └────────────┼────────────────┘     │      │ Outbound:       │       │
-│   │                │ Port 5432            │      │  ALL → ✅       │       │
-│   │   ┌────────────▼────────────────┐     │      └──────────────────┘       │
-│   │   │ PRIVATE SUBNET: 10.0.10.0/24│    │                                 │
-│   │   │                             │     │      ┌──────────────────┐       │
-│   │   │   ┌─────────────────┐       │     │      │ Security Group:  │       │
-│   │   │   │  RDS PostgreSQL │       │     │      │ db-sg           │       │
-│   │   │   │  (Database)     │◄──────┼─────┼──────│                 │       │
-│   │   │   │  NO public IP   │       │     │      │ Inbound:        │       │
-│   │   │   │                 │       │     │      │  5432 from      │       │
-│   │   │   └─────────────────┘       │     │      │  web-sg ONLY ✅│       │
-│   │   │                             │     │      │                 │       │
-│   │   └─────────────────────────────┘     │      │ Outbound:       │       │
-│   │                                       │      │  NONE needed    │       │
-│   └───────────────────────────────────────┘      └──────────────────┘       │
-│                                                                             │
-│          ┌──────────────┐        ┌──────────────────────────────┐           │
-│          │   Internet   │        │ Route Table (Public Subnet): │           │
-│          │   Gateway    │        │  10.0.0.0/16 → local         │           │
-│          │   (IGW)      │        │  0.0.0.0/0   → igw-xxxxx     │           │
-│          └──────┬───────┘        └──────────────────────────────┘           │
-│                 │                                                            │
-│                 │                 ┌──────────────────────────────┐           │
-│                 │                 │ Route Table (Private Subnet):│           │
-│                 │                 │  10.0.0.0/16 → local         │           │
-│                 │                 │  (No internet route!)        │           │
-│                 │                 └──────────────────────────────┘           │
-└─────────────────┼───────────────────────────────────────────────────────────┘
-                  │
-            ┌─────▼─────┐
-            │ INTERNET  │
-            │ (Users)   │
-            └───────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  VPC: 10.0.0.0/16                                                │
+│  Region: us-east-1                                               │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐  │
+│  │  AZ: us-east-1a                                            │  │
+│  │                                                            │  │
+│  │   ┌──────────────────────────────┐                         │  │
+│  │   │  Subnet: 10.0.1.0/24        │                         │  │
+│  │   │  (Public: Yes)               │                         │  │
+│  │   │                              │                         │  │
+│  │   │  🔒 EC2 Instance             │                         │  │
+│  │   │     (Web Server)             │                         │  │
+│  │   │     Public IP: 54.x.x.x     │                         │  │
+│  │   │              │               │                         │  │
+│  │   └──────────────┼───────────────┘                         │  │
+│  │                  │ Port 5432                               │  │
+│  │   ┌──────────────▼───────────────┐                         │  │
+│  │   │  Subnet: 10.0.10.0/24       │                         │  │
+│  │   │  (Public: No)                │                         │  │
+│  │   │                              │                         │  │
+│  │   │  🔒 RDS Postgres Instance    │                         │  │
+│  │   │     (No public IP)           │                         │  │
+│  │   │                              │                         │  │
+│  │   └──────────────────────────────┘                         │  │
+│  │                                                            │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│          ┌────────────┐     ┌────────────┐                       │
+│          │   Router   │────▶│  Internet  │                       │
+│          └────────────┘     │  Gateway   │                       │
+│                             └─────┬──────┘                       │
+└───────────────────────────────────┼──────────────────────────────┘
+                                    │
+                              ┌─────▼─────┐
+                              │ INTERNET  │
+                              └───────────┘
 ```
+
+#### Security Group — `web-sg` (attached to EC2)
+
+**Inbound Rules:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| 0.0.0.0/0 | TCP | 80 (HTTP) |
+| 0.0.0.0/0 | TCP | 443 (HTTPS) |
+| Your IP only | TCP | 22 (SSH) |
+
+**Outbound Rules:**
+
+| Destination | Protocol | Port |
+|-------------|----------|------|
+| 0.0.0.0/0 | ALL | ALL |
+
+#### Security Group — `db-sg` (attached to RDS)
+
+**Inbound Rules:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| web-sg (SG reference) | TCP | 5432 (PostgreSQL) |
+
+**Outbound Rules:**
+
+| Destination | Protocol | Port |
+|-------------|----------|------|
+| — | — | — (none needed) |
+
+#### Custom Route Table (Public Subnet)
+
+| Destination | Target |
+|-------------|--------|
+| 10.0.0.0/16 | local |
+| 0.0.0.0/0 | igw-xxxxx (Internet Gateway) |
+
+#### Main Route Table (Private Subnet)
+
+| Destination | Target |
+|-------------|--------|
+| 10.0.0.0/16 | local |
+| *(No internet route — completely isolated)* | — |
 
 ### How Traffic Flows (Step by Step)
 
@@ -149,73 +179,141 @@ Step 7:  RDS returns data → EC2 sends response → IGW → Internet → User
 ### The Diagram
 
 ```
-                            ┌─────────────┐
-                            │   USERS     │
-                            │ (Internet)  │
-                            └──────┬──────┘
-                                   │
-                            ┌──────▼──────┐
-                            │  CloudFront │   ← CDN (caches static content globally)
-                            │  (Optional) │
-                            └──────┬──────┘
-                                   │
-                            ┌──────▼──────┐
-                            │    ALB      │   ← Application Load Balancer
-                            │ (Public)    │     Distributes traffic across web servers
-                            └──┬──────┬───┘
-                               │      │
-              ┌────────────────┘      └────────────────┐
-              │                                        │
-┌─────────────▼──────────────────┐  ┌──────────────────▼─────────────────┐
-│        AZ: us-east-1a          │  │        AZ: us-east-1b              │
-│                                │  │                                    │
-│  ┌──────────────────────────┐  │  │  ┌──────────────────────────┐     │
-│  │  PUBLIC SUBNET           │  │  │  │  PUBLIC SUBNET           │     │
-│  │  10.0.1.0/24             │  │  │  │  10.0.2.0/24             │     │
-│  │                          │  │  │  │                          │     │
-│  │  ┌─────────────┐        │  │  │  │  ┌─────────────┐        │     │
-│  │  │  NAT GW     │        │  │  │  │  │  NAT GW     │        │     │
-│  │  │  (standby)  │        │  │  │  │  │  (active)   │        │     │
-│  │  └─────────────┘        │  │  │  │  └─────────────┘        │     │
-│  └──────────────────────────┘  │  │  └──────────────────────────┘     │
-│                                │  │                                    │
-│  ┌──────────────────────────┐  │  │  ┌──────────────────────────┐     │
-│  │  WEB TIER (Private)      │  │  │  │  WEB TIER (Private)      │     │
-│  │  10.0.10.0/24            │  │  │  │  10.0.20.0/24            │     │
-│  │                          │  │  │  │                          │     │
-│  │  ┌───────────────────┐   │  │  │  │  ┌───────────────────┐  │     │
-│  │  │  EC2: Nginx       │   │  │  │  │  │  EC2: Nginx       │  │     │
-│  │  │  (Reverse Proxy)  │   │  │  │  │  │  (Reverse Proxy)  │  │     │
-│  │  └─────────┬─────────┘   │  │  │  │  └─────────┬─────────┘  │     │
-│  └────────────┼─────────────┘  │  │  └────────────┼─────────────┘     │
-│               │                │  │               │                    │
-│  ┌────────────▼─────────────┐  │  │  ┌────────────▼─────────────┐     │
-│  │  APP TIER (Private)      │  │  │  │  APP TIER (Private)      │     │
-│  │  10.0.30.0/24            │  │  │  │  10.0.40.0/24            │     │
-│  │                          │  │  │  │                          │     │
-│  │  ┌───────────────────┐   │  │  │  │  ┌───────────────────┐  │     │
-│  │  │  EC2: Node.js /   │   │  │  │  │  │  EC2: Node.js /   │  │     │
-│  │  │  Python / Java    │   │  │  │  │  │  Python / Java    │  │     │
-│  │  │  (API Backend)    │   │  │  │  │  │  (API Backend)    │  │     │
-│  │  └─────────┬─────────┘   │  │  │  │  └─────────┬─────────┘  │     │
-│  └────────────┼─────────────┘  │  │  └────────────┼─────────────┘     │
-│               │                │  │               │                    │
-│  ┌────────────▼─────────────┐  │  │  ┌────────────▼─────────────┐     │
-│  │  DATA TIER (Private)     │  │  │  │  DATA TIER (Private)     │     │
-│  │  10.0.100.0/24           │  │  │  │  10.0.200.0/24           │     │
-│  │                          │  │  │  │                          │     │
-│  │  ┌───────────────────┐   │  │  │  │  ┌───────────────────┐  │     │
-│  │  │  RDS Primary      │───┼──┼──┼──│──│  RDS Standby      │  │     │
-│  │  │  (Write)          │   │  │  │  │  │  (Read Replica)   │  │     │
-│  │  └───────────────────┘   │  │  │  │  └───────────────────┘  │     │
-│  │  ┌───────────────────┐   │  │  │  │  ┌───────────────────┐  │     │
-│  │  │  ElastiCache      │───┼──┼──┼──│──│  ElastiCache      │  │     │
-│  │  │  Redis (Primary)  │   │  │  │  │  │  Redis (Replica)  │  │     │
-│  │  └───────────────────┘   │  │  │  │  └───────────────────┘  │     │
-│  └──────────────────────────┘  │  │  └──────────────────────────┘     │
-│                                │  │                                    │
-└────────────────────────────────┘  └────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  VPC: 10.0.0.0/16                                                                │
+│  Region: us-east-1                                                               │
+│                                                                                  │
+│                              ┌─────────────┐                                     │
+│                              │   USERS     │                                     │
+│                              │ (Internet)  │                                     │
+│                              └──────┬──────┘                                     │
+│                              ┌──────▼──────┐                                     │
+│                              │  CloudFront │  CDN (caches static content)         │
+│                              └──────┬──────┘                                     │
+│                              ┌──────▼──────┐                                     │
+│                              │     ALB     │  Application Load Balancer           │
+│                              │  (Public)   │  Distributes across servers          │
+│                              └──┬───────┬──┘                                     │
+│                                 │       │                                        │
+│         ┌───────────────────────┘       └───────────────────────┐                │
+│         │                                                      │                │
+│  ┌──────▼──────────────────────────┐  ┌────────────────────────▼───────────┐     │
+│  │  AZ: us-east-1a                 │  │  AZ: us-east-1b                   │     │
+│  │                                 │  │                                   │     │
+│  │  ┌───────────────────────────┐  │  │  ┌───────────────────────────┐   │     │
+│  │  │ Subnet: 10.0.1.0/24      │  │  │  │ Subnet: 10.0.2.0/24      │   │     │
+│  │  │ (Public: Yes)             │  │  │  │ (Public: Yes)             │   │     │
+│  │  │   NAT Gateway (standby)  │  │  │  │   NAT Gateway (active)   │   │     │
+│  │  └───────────────────────────┘  │  │  └───────────────────────────┘   │     │
+│  │                                 │  │                                   │     │
+│  │  ┌───────────────────────────┐  │  │  ┌───────────────────────────┐   │     │
+│  │  │ Subnet: 10.0.10.0/24     │  │  │  │ Subnet: 10.0.20.0/24     │   │     │
+│  │  │ (Public: No) — WEB TIER  │  │  │  │ (Public: No) — WEB TIER  │   │     │
+│  │  │   🔒 EC2: Nginx          │  │  │  │   🔒 EC2: Nginx          │   │     │
+│  │  │      (Reverse Proxy)     │  │  │  │      (Reverse Proxy)     │   │     │
+│  │  └─────────────┬─────────────┘  │  │  └─────────────┬─────────────┘   │     │
+│  │                │                │  │                │                 │     │
+│  │  ┌─────────────▼─────────────┐  │  │  ┌─────────────▼─────────────┐   │     │
+│  │  │ Subnet: 10.0.30.0/24     │  │  │  │ Subnet: 10.0.40.0/24     │   │     │
+│  │  │ (Public: No) — APP TIER  │  │  │  │ (Public: No) — APP TIER  │   │     │
+│  │  │   🔒 EC2: Node.js /      │  │  │  │   🔒 EC2: Node.js /      │   │     │
+│  │  │      Python / Java       │  │  │  │      Python / Java       │   │     │
+│  │  │      (API Backend)       │  │  │  │      (API Backend)       │   │     │
+│  │  └─────────────┬─────────────┘  │  │  └─────────────┬─────────────┘   │     │
+│  │                │                │  │                │                 │     │
+│  │  ┌─────────────▼─────────────┐  │  │  ┌─────────────▼─────────────┐   │     │
+│  │  │ Subnet: 10.0.100.0/24    │  │  │  │ Subnet: 10.0.200.0/24    │   │     │
+│  │  │ (Public: No) — DATA TIER │  │  │  │ (Public: No) — DATA TIER │   │     │
+│  │  │   🔒 RDS Primary (Write) │──┼──┼──│   🔒 RDS Standby (Read)  │   │     │
+│  │  │   🔒 ElastiCache Primary │──┼──┼──│   🔒 ElastiCache Replica │   │     │
+│  │  └───────────────────────────┘  │  │  └───────────────────────────┘   │     │
+│  │                                 │  │                                   │     │
+│  └─────────────────────────────────┘  └───────────────────────────────────┘     │
+│                                                                                  │
+│         ┌────────────┐     ┌──────────────┐                                      │
+│         │   Router   │────▶│ Internet GW  │                                      │
+│         └────────────┘     └──────┬───────┘                                      │
+└────────────────────────────────────┼─────────────────────────────────────────────┘
+                                     │
+                               ┌─────▼─────┐
+                               │ INTERNET  │
+                               └───────────┘
 ```
+
+#### Security Group — `alb-sg` (attached to ALB)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| 0.0.0.0/0 | TCP | 80 (HTTP) |
+| 0.0.0.0/0 | TCP | 443 (HTTPS) |
+
+**Outbound:**
+
+| Destination | Protocol | Port |
+|-------------|----------|------|
+| web-sg | TCP | 80 |
+
+#### Security Group — `web-sg` (attached to Nginx EC2s)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| alb-sg (SG reference) | TCP | 80 |
+| alb-sg (SG reference) | TCP | 443 |
+
+**Outbound:**
+
+| Destination | Protocol | Port |
+|-------------|----------|------|
+| app-sg | TCP | 8080 |
+
+#### Security Group — `app-sg` (attached to API EC2s)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| web-sg (SG reference) | TCP | 8080 |
+
+**Outbound:**
+
+| Destination | Protocol | Port |
+|-------------|----------|------|
+| db-sg | TCP | 5432 |
+| cache-sg | TCP | 6379 |
+
+#### Security Group — `db-sg` (attached to RDS)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| app-sg (SG reference) | TCP | 5432 (PostgreSQL) |
+
+#### Security Group — `cache-sg` (attached to ElastiCache)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| app-sg (SG reference) | TCP | 6379 (Redis) |
+
+#### Route Table — Public Subnets (10.0.1.0/24, 10.0.2.0/24)
+
+| Destination | Target |
+|-------------|--------|
+| 10.0.0.0/16 | local |
+| 0.0.0.0/0 | igw-xxxxx (Internet Gateway) |
+
+#### Route Table — Private Subnets (all tier subnets)
+
+| Destination | Target |
+|-------------|--------|
+| 10.0.0.0/16 | local |
+| 0.0.0.0/0 | nat-gw-xxxxx (NAT Gateway) |
 
 ### How Traffic Flows
 
@@ -237,28 +335,23 @@ User → CloudFront (cache check)
 > | Two tiers (web + DB) | Better, but web and API scale together even if only API is overloaded. |
 > | Three tiers | Web, API, and DB scale independently. Security at each layer. Industry standard. |
 
-### Security Groups for Three-Tier
+### Security Group Chain (Defense in Depth)
 
 ```
-┌──────────────────────────────────────────────────┐
-│ SECURITY GROUP CHAIN (Defense in Depth)           │
-│                                                   │
-│  alb-sg          → Allows 80/443 from 0.0.0.0/0  │
-│       │                                           │
-│       ▼                                           │
-│  web-sg          → Allows 80/443 from alb-sg ONLY │
-│       │                                           │
-│       ▼                                           │
-│  app-sg          → Allows 8080 from web-sg ONLY   │
-│       │                                           │
-│       ▼                                           │
-│  db-sg           → Allows 5432 from app-sg ONLY   │
-│  cache-sg        → Allows 6379 from app-sg ONLY   │
-│                                                   │
-│  ❌ A hacker who compromises the ALB cannot       │
-│     directly reach the database — they must       │
-│     breach EACH layer one by one.                 │
-└──────────────────────────────────────────────────┘
+alb-sg          → Allows 80/443 from 0.0.0.0/0
+     │
+     ▼
+web-sg          → Allows 80/443 from alb-sg ONLY
+     │
+     ▼
+app-sg          → Allows 8080 from web-sg ONLY
+     │
+     ▼
+db-sg           → Allows 5432 from app-sg ONLY
+cache-sg        → Allows 6379 from app-sg ONLY
+
+❌ A hacker who compromises the ALB cannot directly reach the database —
+   they must breach EACH layer one by one.
 ```
 
 > **This is called "Defense in Depth"** — multiple layers of security. Even if one layer is breached, the attacker still can't reach the database directly.
@@ -276,40 +369,99 @@ User → CloudFront (cache check)
 ### The Diagram
 
 ```
-                           ┌───────────────┐
-                           │   Route 53    │
-                           │  (DNS)        │
-                           │ app.example.com│
-                           └───────┬───────┘
-                                   │
-                           ┌───────▼───────┐
-                           │     ALB       │
-                           │ (spans both   │
-                           │  AZs)         │
-                           └──┬─────────┬──┘
-                              │         │
-             ┌────────────────┘         └────────────────┐
-             │                                           │
-┌────────────▼───────────────┐       ┌───────────────────▼────────────┐
-│   AZ: us-east-1a           │       │   AZ: us-east-1b               │
-│                            │       │                                │
-│  ┌──────────────────────┐  │       │  ┌──────────────────────┐     │
-│  │ EC2: App Server #1   │  │       │  │ EC2: App Server #2   │     │
-│  │ (Running)     ✅     │  │       │  │ (Running)     ✅     │     │
-│  └──────────┬───────────┘  │       │  └──────────┬───────────┘     │
-│             │              │       │             │                  │
-│  ┌──────────▼───────────┐  │       │  ┌──────────▼───────────┐     │
-│  │ RDS: PRIMARY         │──┼───────┼──│ RDS: STANDBY         │     │
-│  │ (Writes + Reads)     │  │ sync  │  │ (Auto-failover)      │     │
-│  │                 ✅   │──┼───────┼──│                 🟡   │     │
-│  └──────────────────────┘  │       │  └──────────────────────┘     │
-│                            │       │                                │
-│  ┌──────────────────────┐  │       │  ┌──────────────────────┐     │
-│  │ ElastiCache: Primary │──┼───────┼──│ ElastiCache: Replica │     │
-│  └──────────────────────┘  │ sync  │  └──────────────────────┘     │
-│                            │       │                                │
-└────────────────────────────┘       └────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  VPC: 10.0.0.0/16                                                                │
+│  Region: us-east-1                                                               │
+│                                                                                  │
+│                         ┌───────────────────┐                                    │
+│                         │   Route 53 (DNS)  │                                    │
+│                         │  app.example.com  │                                    │
+│                         └────────┬──────────┘                                    │
+│                         ┌────────▼──────────┐                                    │
+│                         │      ALB          │                                    │
+│                         │  (spans both AZs) │                                    │
+│                         └───┬───────────┬───┘                                    │
+│                             │           │                                        │
+│    ┌────────────────────────┘           └────────────────────────┐                │
+│    │                                                            │                │
+│  ┌─▼──────────────────────────────────┐  ┌──────────────────────▼─────────────┐   │
+│  │  AZ: us-east-1a                    │  │  AZ: us-east-1b                    │   │
+│  │                                    │  │                                    │   │
+│  │  ┌──────────────────────────────┐  │  │  ┌──────────────────────────────┐  │   │
+│  │  │ Subnet: 10.0.10.0/24        │  │  │  │ Subnet: 10.0.20.0/24        │  │   │
+│  │  │ (Public: No)                 │  │  │  │ (Public: No)                 │  │   │
+│  │  │                              │  │  │  │                              │  │   │
+│  │  │  🔒 EC2: App Server #1      │  │  │  │  🔒 EC2: App Server #2      │  │   │
+│  │  │     (Running) ✅             │  │  │  │     (Running) ✅             │  │   │
+│  │  └──────────────┬───────────────┘  │  │  └──────────────┬───────────────┘  │   │
+│  │                 │                  │  │                 │                  │   │
+│  │  ┌──────────────▼───────────────┐  │  │  ┌──────────────▼───────────────┐  │   │
+│  │  │ Subnet: 10.0.100.0/24       │  │  │  │ Subnet: 10.0.200.0/24       │  │   │
+│  │  │ (Public: No)                 │  │  │  │ (Public: No)                 │  │   │
+│  │  │                              │  │  │  │                              │  │   │
+│  │  │  🔒 RDS: PRIMARY        ✅  │══╪══╪══│  🔒 RDS: STANDBY        🟡  │  │   │
+│  │  │     (Writes + Reads)         │sync│  │     (Auto-failover)          │  │   │
+│  │  │                              │  │  │  │                              │  │   │
+│  │  │  🔒 ElastiCache: Primary    │══╪══╪══│  🔒 ElastiCache: Replica    │  │   │
+│  │  │                              │sync│  │                              │  │   │
+│  │  └──────────────────────────────┘  │  │  └──────────────────────────────┘  │   │
+│  │                                    │  │                                    │   │
+│  └────────────────────────────────────┘  └────────────────────────────────────┘   │
+│                                                                                  │
+│         ┌────────────┐     ┌──────────────┐                                      │
+│         │   Router   │────▶│ Internet GW  │                                      │
+│         └────────────┘     └──────┬───────┘                                      │
+└───────────────────────────────────┼──────────────────────────────────────────────┘
+                                    │
+                              ┌─────▼─────┐
+                              │ INTERNET  │
+                              └───────────┘
 ```
+
+#### Security Group — `alb-sg` (attached to ALB)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| 0.0.0.0/0 | TCP | 80 (HTTP) |
+| 0.0.0.0/0 | TCP | 443 (HTTPS) |
+
+**Outbound:**
+
+| Destination | Protocol | Port |
+|-------------|----------|------|
+| app-sg | TCP | 8080 |
+
+#### Security Group — `app-sg` (attached to EC2 App Servers)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| alb-sg (SG reference) | TCP | 8080 |
+
+**Outbound:**
+
+| Destination | Protocol | Port |
+|-------------|----------|------|
+| db-sg | TCP | 5432 |
+| cache-sg | TCP | 6379 |
+
+#### Security Group — `db-sg` (attached to RDS)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| app-sg (SG reference) | TCP | 5432 (PostgreSQL) |
+
+#### Route Table — Private Subnets
+
+| Destination | Target |
+|-------------|--------|
+| 10.0.0.0/16 | local |
+| 0.0.0.0/0 | nat-gw-xxxxx (NAT Gateway) |
 
 ### What Happens When AZ-a Goes Down?
 
@@ -361,47 +513,84 @@ WHEN AZ-a RECOVERS:
 ### The Diagram
 
 ```
-┌───────────────────────────────────────────────────────────────────────────┐
-│                        VPC: 10.0.0.0/16                                   │
-│                                                                           │
-│  ┌─────────────────────────────────────────────────┐                      │
-│  │  PUBLIC SUBNET: 10.0.1.0/24                     │                      │
-│  │                                                 │                      │
-│  │  ┌──────────────┐     ┌───────────────────┐     │                      │
-│  │  │  NAT Gateway │     │   Bastion Host    │     │                      │
-│  │  │              │     │   (Jump Box)      │     │                      │
-│  │  │ Has Elastic  │     │   For SSH access  │     │                      │
-│  │  │ IP (public)  │     │   to private EC2s │     │                      │
-│  │  └──────┬───────┘     └───────────────────┘     │                      │
-│  │         │                                       │                      │
-│  └─────────┼───────────────────────────────────────┘                      │
-│            │                                                              │
-│  ┌─────────▼───────────────────────────────────────┐                      │
-│  │  PRIVATE SUBNET: 10.0.10.0/24                   │                      │
-│  │                                                 │                      │
-│  │  ┌──────────────┐  ┌──────────────┐             │                      │
-│  │  │  EC2: App    │  │  EC2: Worker │             │                      │
-│  │  │  Server      │  │  (Background │             │                      │
-│  │  │              │  │   Jobs)      │             │                      │
-│  │  │ Needs to:    │  │ Needs to:    │             │                      │
-│  │  │ - apt update │  │ - Call APIs  │             │                      │
-│  │  │ - pip install│  │ - Send email │             │                      │
-│  │  └──────────────┘  └──────────────┘             │                      │
-│  │                                                 │                      │
-│  │  Route Table:                                   │                      │
-│  │    10.0.0.0/16 → local                          │                      │
-│  │    0.0.0.0/0   → nat-gw-xxxxx  ← OUTBOUND ONLY │                      │
-│  └─────────────────────────────────────────────────┘                      │
-│                                                                           │
-│  ┌──────────────┐                                                         │
-│  │ Internet GW  │                                                         │
-│  └──────┬───────┘                                                         │
-└─────────┼─────────────────────────────────────────────────────────────────┘
-          │
-    ┌─────▼─────┐
-    │ INTERNET  │
-    └───────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  VPC: 10.0.0.0/16                                                            │
+│  Region: us-east-1                                                           │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────────┐   │
+│  │  AZ: us-east-1a                                                        │   │
+│  │                                                                        │   │
+│  │  ┌──────────────────────────────────────────────────────────────────┐   │   │
+│  │  │  Subnet: 10.0.1.0/24  (Public: Yes)                              │   │   │
+│  │  │                                                                  │   │   │
+│  │  │  🔒 NAT Gateway           🔒 Bastion Host (Jump Box)           │   │   │
+│  │  │     Has Elastic IP            For SSH access to private EC2s    │   │   │
+│  │  │     (public)                                                    │   │   │
+│  │  └──────────────┬───────────────────────────────────────────────────┘   │   │
+│  │                 │                                                      │   │   │
+│  │  ┌──────────────▼───────────────────────────────────────────────────┐   │   │
+│  │  │  Subnet: 10.0.10.0/24  (Public: No)                              │   │   │
+│  │  │                                                                  │   │   │
+│  │  │  🔒 EC2: App Server          🔒 EC2: Worker                    │   │   │
+│  │  │     Needs to:                     Needs to:                     │   │   │
+│  │  │     - apt update                  - Call APIs                   │   │   │
+│  │  │     - pip install                 - Send email                  │   │   │
+│  │  │                                                                  │   │   │
+│  │  └──────────────────────────────────────────────────────────────────┘   │   │
+│  │                                                                        │   │
+│  └────────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
+│         ┌────────────┐     ┌──────────────┐                                  │
+│         │   Router   │────▶│ Internet GW  │                                  │
+│         └────────────┘     └──────┬───────┘                                  │
+└───────────────────────────────────┼──────────────────────────────────────────┘
+                                    │
+                              ┌─────▼─────┐
+                              │ INTERNET  │
+                              └───────────┘
 ```
+
+#### Security Group — `bastion-sg` (attached to Bastion Host)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| Your IP only | TCP | 22 (SSH) |
+
+**Outbound:**
+
+| Destination | Protocol | Port |
+|-------------|----------|------|
+| 10.0.10.0/24 | TCP | 22 (SSH to private instances) |
+
+#### Security Group — `app-sg` (attached to private EC2s)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| bastion-sg (SG reference) | TCP | 22 (SSH) |
+
+**Outbound:**
+
+| Destination | Protocol | Port |
+|-------------|----------|------|
+| 0.0.0.0/0 | ALL | ALL (via NAT GW — outbound only) |
+
+#### Route Table — Public Subnet (10.0.1.0/24)
+
+| Destination | Target |
+|-------------|--------|
+| 10.0.0.0/16 | local |
+| 0.0.0.0/0 | igw-xxxxx (Internet Gateway) |
+
+#### Route Table — Private Subnet (10.0.10.0/24)
+
+| Destination | Target |
+|-------------|--------|
+| 10.0.0.0/16 | local |
+| 0.0.0.0/0 | nat-gw-xxxxx (NAT Gateway) — **Outbound ONLY** |
 
 ### How NAT Gateway Works (The Flow)
 
@@ -467,15 +656,42 @@ INBOUND (Internet → Private EC2):
 │  │  │  10.1.1.50:8080      │    │  │  xxxxx  │  │  │  IP: 10.1.1.50     │    │  │
 │  │  └──────────────────────┘    │  │         │  │  └──────────────────────┘    │  │
 │  │                              │  │         │  │                              │  │
-│  │  Route Table:                │  │         │  │  Route Table:                │  │
-│  │   10.0.0.0/16 → local       │  │         │  │   10.1.0.0/16 → local       │  │
-│  │   10.1.0.0/16 → pcx-xxxxx   │  │         │  │   10.0.0.0/16 → pcx-xxxxx   │  │
-│  │   ▲ "To reach VPC-B,        │  │         │  │   ▲ "To reach VPC-A,        │  │
-│  │     use the peering tunnel"  │  │         │  │     use the peering tunnel"  │  │
 │  └──────────────────────────────┘  │         │  └──────────────────────────────┘  │
 │                                    │         │                                    │
 └────────────────────────────────────┘         └────────────────────────────────────┘
 ```
+
+#### Route Table — VPC-A (Team Frontend)
+
+| Destination | Target |
+|-------------|--------|
+| 10.0.0.0/16 | local |
+| 10.1.0.0/16 | pcx-xxxxx (Peering to VPC-B) |
+
+> *"To reach VPC-B, use the peering tunnel"*
+
+#### Route Table — VPC-B (Team Backend)
+
+| Destination | Target |
+|-------------|--------|
+| 10.1.0.0/16 | local |
+| 10.0.0.0/16 | pcx-xxxxx (Peering to VPC-A) |
+
+> *"To reach VPC-A, use the peering tunnel"*
+
+#### Security Group — `api-sg` (in VPC-B, attached to API Backend)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| 10.0.0.0/16 (VPC-A CIDR) | TCP | 8080 |
+
+**Outbound:**
+
+| Destination | Protocol | Port |
+|-------------|----------|------|
+| 0.0.0.0/0 | ALL | ALL |
 
 ### VPC Peering — Critical Rules
 
@@ -523,63 +739,58 @@ Peering connections needed:
 ### The Diagram
 
 ```
-                              ┌─────────────────────┐
-                              │    TRANSIT GATEWAY   │
-                              │    (Central Hub)     │
-                              │                     │
-                              │  Route Tables:       │
-                              │  ┌───────────────┐  │
-                              │  │ Prod-RT:       │  │
-                              │  │ 10.0.x → Prod │  │
-                              │  │ 10.2.x → Share│  │
-                              │  │ 0.0.0.0→ Share│  │
-                              │  ├───────────────┤  │
-                              │  │ Dev-RT:        │  │
-                              │  │ 10.1.x → Dev  │  │
-                              │  │ 10.2.x → Share│  │
-                              │  │ ❌ NO route    │  │
-                              │  │   to Prod!     │  │
-                              │  ├───────────────┤  │
-                              │  │ Shared-RT:     │  │
-                              │  │ 10.0.x → Prod │  │
-                              │  │ 10.1.x → Dev  │  │
-                              │  │ 10.2.x → Share│  │
-                              │  │ 0.0.0.0→ IGW  │  │
-                              │  └───────────────┘  │
-                              └──┬──────┬──────┬────┘
-                                 │      │      │
-             ┌───────────────────┘      │      └───────────────────┐
-             │                          │                          │
-   ┌─────────▼──────────┐   ┌──────────▼──────────┐   ┌──────────▼──────────┐
-   │  VPC: PRODUCTION   │   │  VPC: DEVELOPMENT   │   │  VPC: SHARED        │
-   │  10.0.0.0/16       │   │  10.1.0.0/16        │   │  SERVICES           │
-   │                    │   │                      │   │  10.2.0.0/16        │
-   │  ┌──────────────┐  │   │  ┌──────────────┐   │   │                     │
-   │  │ Web Servers  │  │   │  │ Dev Servers  │   │   │  ┌──────────────┐   │
-   │  │ API Servers  │  │   │  │ Test DBs     │   │   │  │ NAT Gateway  │   │
-   │  │ Prod RDS     │  │   │  │ CI/CD runners│   │   │  │ (centralized │   │
-   │  └──────────────┘  │   │  └──────────────┘   │   │  │  egress)     │   │
-   │                    │   │                      │   │  ├──────────────┤   │
-   │  🔒 Prod can talk  │   │  ❌ Dev CANNOT reach │   │  │ Bastion Host │   │
-   │  to Shared only   │   │   Prod (isolated!)   │   │  │ VPN Endpoint │   │
-   └────────────────────┘   └──────────────────────┘   │  │ DNS Resolver │   │
-                                                       │  │ Monitoring   │   │
-                                   ┌───────────────────┤  └──────────────┘   │
-                                   │                   │                     │
-                                   │                   └─────────────────────┘
-                                   │
-                          ┌────────▼────────┐
-                          │  ON-PREMISE     │
-                          │  Data Center   │
-                          │  172.16.0.0/12 │
-                          │                │
-                          │  Connected via: │
-                          │  - Site-to-Site │
-                          │    VPN         │
-                          │  - OR Direct   │
-                          │    Connect     │
-                          └────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          TRANSIT GATEWAY (Central Hub)                         │
+└──────────────────┬─────────────────────┬───────────────────┬────────────────┘
+                   │                     │                   │
+     ┌─────────────▼─────────┐  ┌─────▼─────────────┐  ┌───▼───────────────┐
+     │ VPC: PRODUCTION       │  │ VPC: DEVELOPMENT  │  │ VPC: SHARED         │
+     │ 10.0.0.0/16           │  │ 10.1.0.0/16       │  │ SERVICES            │
+     │                       │  │                   │  │ 10.2.0.0/16         │
+     │  🔒 Web Servers        │  │  🔒 Dev Servers   │  │                     │
+     │  🔒 API Servers        │  │  🔒 Test DBs      │  │  🔒 NAT Gateway     │
+     │  🔒 Prod RDS           │  │  🔒 CI/CD Runners │  │  🔒 Bastion Host    │
+     │                       │  │                   │  │  🔒 VPN Endpoint    │
+     │  🔒 Prod → Shared only │  │  ❌ Dev CANNOT    │  │  🔒 DNS Resolver    │
+     │                       │  │    reach Prod!   │  │  🔒 Monitoring      │
+     └───────────────────────┘  └───────────────────┘  └─────────────┬───────┘
+                                                                │
+                                                      ┌────────▼────────┐
+                                                      │  ON-PREMISE       │
+                                                      │  Data Center      │
+                                                      │  172.16.0.0/12    │
+                                                      │                   │
+                                                      │  Connected via:   │
+                                                      │  Site-to-Site VPN │
+                                                      │  or Direct Connect│
+                                                      └───────────────────┘
 ```
+
+#### Transit Gateway Route Table — `Prod-RT`
+
+| Destination | Target | Note |
+|-------------|--------|------|
+| 10.0.0.0/16 | VPC-Prod attachment | Local production traffic |
+| 10.2.0.0/16 | VPC-Shared attachment | Access shared services |
+| 0.0.0.0/0 | VPC-Shared attachment | Internet via centralized NAT |
+| *(No route to 10.1.0.0/16)* | — | **Dev is completely isolated from Prod** |
+
+#### Transit Gateway Route Table — `Dev-RT`
+
+| Destination | Target | Note |
+|-------------|--------|------|
+| 10.1.0.0/16 | VPC-Dev attachment | Local dev traffic |
+| 10.2.0.0/16 | VPC-Shared attachment | Access shared services |
+| *(No route to 10.0.0.0/16)* | — | **Dev CANNOT reach Prod!** |
+
+#### Transit Gateway Route Table — `Shared-RT`
+
+| Destination | Target | Note |
+|-------------|--------|------|
+| 10.0.0.0/16 | VPC-Prod attachment | Route to Prod VPC |
+| 10.1.0.0/16 | VPC-Dev attachment | Route to Dev VPC |
+| 10.2.0.0/16 | VPC-Shared attachment | Local shared traffic |
+| 0.0.0.0/0 | Internet Gateway | Internet egress |
 
 ### Why This Architecture Matters
 
@@ -707,6 +918,34 @@ WITH centralized egress through Shared VPC:
 | **Availability** | 2 tunnels | Need 2 connections for redundancy | Highest availability |
 | **Best for** | Dev, backup, low traffic | Production, data migration, real-time apps | Enterprise production |
 
+#### Route Table — AWS VPC (for Hybrid Connectivity)
+
+| Destination | Target |
+|-------------|--------|
+| 10.0.0.0/16 | local |
+| 172.16.0.0/12 | vgw-xxxxx (Virtual Private Gateway) |
+| 0.0.0.0/0 | igw-xxxxx (Internet Gateway) |
+
+> *Traffic to 172.16.x.x (on-premise) goes through the VPN tunnel / Direct Connect, while internet traffic goes through the IGW.*
+
+#### Security Group — `hybrid-app-sg` (EC2 in AWS VPC)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| 172.16.0.0/12 (on-premise CIDR) | TCP | 443 (HTTPS) |
+| 172.16.0.0/12 (on-premise CIDR) | TCP | 8080 (API) |
+| 10.0.0.0/16 (VPC local) | TCP | ALL |
+
+**Outbound:**
+
+| Destination | Protocol | Port |
+|-------------|----------|------|
+| 172.16.0.0/12 (on-premise) | TCP | 1433 (SQL Server) |
+| 172.16.0.0/12 (on-premise) | TCP | 389 (LDAP / Active Directory) |
+| 0.0.0.0/0 | ALL | ALL |
+
 ---
 
 ## Architecture 8 — VPC Endpoints (Private AWS Access)
@@ -784,6 +1023,27 @@ WITH centralized egress through Shared VPC:
 | **Security** | Endpoint policy | Endpoint policy + Security Groups |
 
 > **Rule of thumb:** If the service is S3 or DynamoDB → use Gateway Endpoint (free). For everything else → use Interface Endpoint.
+
+#### Route Table — Private Subnet (with Gateway Endpoint)
+
+| Destination | Target |
+|-------------|--------|
+| 10.0.0.0/16 | local |
+| pl-xxxxx (S3 prefix list) | vpce-xxxxx (S3 Gateway Endpoint) |
+| pl-yyyyy (DynamoDB prefix list) | vpce-yyyyy (DynamoDB Gateway Endpoint) |
+| *(No 0.0.0.0/0 route needed!)* | — |
+
+> *The prefix list (`pl-xxxxx`) is a managed list of S3 IP ranges that AWS maintains automatically. The route table sends S3 traffic directly to the endpoint — no NAT or IGW required.*
+
+#### Security Group — Interface Endpoint (for SQS, Secrets Manager, etc.)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| 10.0.10.0/24 (Private subnet CIDR) | TCP | 443 (HTTPS) |
+
+> *Interface endpoints use HTTPS (443) — your app talks to the service via the endpoint's private IP on port 443.*
 
 ### Cost Savings Example
 
@@ -868,33 +1128,24 @@ WITH S3 Gateway Endpoint:
 
 ### DR Strategies — From Cheapest to Fastest Recovery
 
-```
-┌───────────────────────────────────────────────────────────────────────────┐
-│                    DR STRATEGIES COMPARISON                               │
-│                                                                           │
-│  STRATEGY        │ COST    │ RTO        │ RPO       │ DESCRIPTION         │
-│  ─────────────── │ ─────── │ ────────── │ ───────── │ ─────────────────── │
-│                  │         │            │           │                     │
-│  Backup &        │  $      │ 24 hours   │ 24 hours  │ Backups stored in   │
-│  Restore         │ (lowest)│ (slowest)  │           │ DR region. Restore  │
-│                  │         │            │           │ from scratch.       │
-│                  │         │            │           │                     │
-│  Pilot Light     │  $$     │ 1-4 hours  │ Minutes   │ Core systems always │
-│                  │         │            │           │ on (DB replicas).   │
-│                  │         │            │           │ Scale up on trigger.│
-│                  │         │            │           │                     │
-│  Warm Standby    │  $$$    │ 15-30 min  │ Seconds   │ Scaled-down copy    │
-│                  │         │            │           │ running. Scale UP   │
-│                  │         │            │           │ on failover.        │
-│                  │         │            │           │                     │
-│  Active-Active   │  $$$$   │ ~0 (zero)  │ ~0 (zero) │ Both regions serve  │
-│  (Multi-Region)  │(highest)│ (fastest)  │           │ traffic. No down-   │
-│                  │         │            │           │ time on failover.   │
-│                  │         │            │           │                     │
-│  RTO = Recovery Time Objective (how long until app is back online)       │
-│  RPO = Recovery Point Objective (how much data can you afford to lose)   │
-└───────────────────────────────────────────────────────────────────────────┘
-```
+| Strategy | Cost | RTO | RPO | Description |
+|----------|------|-----|-----|-------------|
+| **Backup & Restore** | $ (lowest) | 24 hours (slowest) | 24 hours | Backups stored in DR region. Restore from scratch. |
+| **Pilot Light** | $$ | 1-4 hours | Minutes | Core systems always on (DB replicas). Scale up on trigger. |
+| **Warm Standby** | $$$ | 15-30 min | Seconds | Scaled-down copy running. Scale UP on failover. |
+| **Active-Active** | $$$$ (highest) | ~0 (fastest) | ~0 | Both regions serve traffic. No downtime on failover. |
+
+> **RTO** = Recovery Time Objective (how long until app is back online)
+> **RPO** = Recovery Point Objective (how much data can you afford to lose)
+
+#### Route 53 — Failover Routing Policy
+
+| Record | Type | Routing Policy | Health Check |
+|--------|------|----------------|--------------|
+| app.example.com | A (ALB alias) | Failover — **Primary** | us-east-1 ALB health check |
+| app.example.com | A (ALB alias) | Failover — **Secondary** | eu-west-1 ALB health check |
+
+> *Route 53 health checks run every 10 seconds. After 3 consecutive failures, DNS automatically points to the DR region.*
 
 ### Failover Flow
 
@@ -965,6 +1216,26 @@ NORMAL OPERATION:
 | **Blast radius** | Full network access between VPCs | Only the exposed service |
 | **Used for** | Trusted VPCs that need broad access | Microservices, SaaS, zero-trust |
 | **Analogy** | Opening a door between two rooms | Installing an intercom system |
+
+#### Security Group — `nlb-target-sg` (VPC-A: Payment API behind NLB)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| 10.0.0.0/16 (VPC-A CIDR) | TCP | 443 |
+
+> *NLB forwards traffic to the Payment API. The source IP seen by the target is the NLB's private IP within VPC-A.*
+
+#### Security Group — `endpoint-sg` (VPC-B: Interface Endpoint ENI)
+
+**Inbound:**
+
+| Source | Protocol | Port |
+|--------|----------|------|
+| 10.1.0.0/16 (VPC-B CIDR) | TCP | 443 |
+
+> *The Order API calls `vpce-xxx.payment.vpc-endpoint.com` on port 443. The endpoint's ENI receives the traffic and forwards it across PrivateLink to VPC-A's NLB.*
 
 ---
 
