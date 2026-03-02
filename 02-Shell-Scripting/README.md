@@ -59,6 +59,8 @@ Imagine you run a **restaurant kitchen**:
 - Debugging: `set -x`, `trap`, `shellcheck`
 - Here documents (`<<EOF`) and here strings (`<<<`)
 
+> **📖 [Full Scripting Guide with Examples →](shell-scripting-guide.md)** — Comprehensive Bash reference with real-world patterns and practical examples.
+
 ---
 
 ## 15 Production Shell Scripts
