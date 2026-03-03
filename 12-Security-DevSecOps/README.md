@@ -1808,6 +1808,426 @@ aws configservice put-remediation-configurations --remediation-configurations '[
 
 ---
 
+## AWS Service 11: Amazon EventBridge (Security Event Router)
+
+### What Is EventBridge?
+
+EventBridge is the **central nervous system** of your security architecture. It's an event bus that receives events from AWS services (GuardDuty, Security Hub, Config, CloudTrail) and routes them to the right target (Lambda, SNS, SQS) based on rules you define.
+
+**Think of it as a Smart Post Office:**
+- Letters (events) arrive from different senders (GuardDuty, Config, etc.)
+- Postal workers (rules) read the envelope label (event pattern)
+- They route each letter to the correct mailbox (target: Lambda, SNS, etc.)
+- Some letters go to multiple mailboxes (one event → multiple targets)
+
+### How EventBridge Works in Security
+
+```
+EVENTS COME IN FROM:                  RULES MATCH PATTERNS:              TARGETS TAKE ACTION:
+┌──────────────┐                     ┌──────────────────┐               ┌──────────────────┐
+│ GuardDuty    │──→ Finding event    │ IF severity >= 7 │──→ Route to │ Lambda: Isolate  │
+│              │    (JSON payload)   │ AND type=Crypto   │              │ EC2 instance     │
+└──────────────┘                     └──────────────────┘               └──────────────────┘
+┌──────────────┐                     ┌──────────────────┐               ┌──────────────────┐
+│ Security Hub │──→ Finding imported │ IF S3 public     │──→ Route to │ Lambda: Block    │
+│              │                     │ AND severity=CRIT │              │ public access    │
+└──────────────┘                     └──────────────────┘               └──────────────────┘
+┌──────────────┐                     ┌──────────────────┐               ┌──────────────────┐
+│ CloudTrail   │──→ API call event   │ IF event=         │──→ Route to │ SNS: Alert team  │
+│              │                     │   StopLogging     │              │ immediately      │
+└──────────────┘                     └──────────────────┘               └──────────────────┘
+┌──────────────┐                     ┌──────────────────┐               ┌──────────────────┐
+│ Config       │──→ Compliance change│ IF status=        │──→ Route to │ Lambda: Auto-fix │
+│              │                     │   NON_COMPLIANT   │              │ config drift     │
+└──────────────┘                     └──────────────────┘               └──────────────────┘
+```
+
+### Why EventBridge Is Critical for Security
+
+| Without EventBridge | With EventBridge |
+|---------------------|------------------|
+| GuardDuty finds threat → sits in console → someone checks hours later | GuardDuty finds threat → EventBridge → Lambda isolates in 5 seconds |
+| Config detects public S3 → email sent → engineer fixes next day | Config detects public S3 → EventBridge → Lambda blocks in 3 seconds |
+| Root login happens → nobody notices for weeks | Root login → EventBridge → SNS → PagerDuty alert in 2 seconds |
+
+### Real-Time Example: 6 Security Rules Running 24/7
+
+```
+YOUR EVENTBRIDGE SECURITY RULES:
+
+Rule 1: "guardduty-critical"
+  WHEN: GuardDuty finding with severity >= 7 (CRITICAL/HIGH)
+  THEN: → Lambda (isolate EC2 + snapshot + tag)
+        → SNS (PagerDuty P1 alert)
+
+Rule 2: "s3-public-detected"
+  WHEN: Security Hub finding = S3 bucket public access
+  THEN: → Lambda (enable Block Public Access + KMS encryption)
+        → SNS (Slack #security-alerts)
+
+Rule 3: "iam-key-compromise"
+  WHEN: GuardDuty finding type starts with "UnauthorizedAccess:IAMUser"
+  THEN: → Lambda (disable all keys + attach deny-all policy)
+        → SNS (PagerDuty P1 + email to CISO)
+
+Rule 4: "open-ssh-detected"
+  WHEN: Security Hub finding = security group 0.0.0.0/0 on SSH
+  THEN: → Lambda (revoke 0.0.0.0/0 ingress rule)
+        → SNS (Slack notification)
+
+Rule 5: "root-account-login"
+  WHEN: CloudTrail event = ConsoleLogin with userIdentity.type = "Root"
+  THEN: → SNS (CRITICAL alert to all channels)
+
+Rule 6: "cloudtrail-stopped"
+  WHEN: CloudTrail event = StopLogging OR DeleteTrail
+  THEN: → SNS (CRITICAL alert)
+        → Lambda (re-enable trail automatically)
+```
+
+### EventBridge Event Pattern Example
+```json
+{
+    "source": ["aws.guardduty"],
+    "detail-type": ["GuardDuty Finding"],
+    "detail": {
+        "severity": [{ "numeric": [">=", 7] }],
+        "type": [{ "prefix": "CryptoCurrency:" }]
+    }
+}
+```
+This pattern says: "Match any GuardDuty finding where severity is 7+ AND the type starts with CryptoCurrency". When matched, EventBridge instantly sends the full event JSON to your Lambda function.
+
+### Scheduled Rules (Cron Jobs)
+EventBridge also replaces cron for scheduled security tasks:
+```
+"cron(0 9 ? * MON *)"  →  Every Monday 9 AM: Generate weekly security report
+"rate(1 hour)"          →  Every hour: Check for stale IAM access keys
+"rate(6 hours)"         →  Every 6 hours: Sync GuardDuty findings to SIEM
+```
+
+---
+
+## AWS Service 12: AWS Lambda (Security Auto-Remediation Engine)
+
+### What Is Lambda in Security Context?
+
+Lambda is a **serverless function** that runs your security remediation code WITHOUT any servers to manage. You write Python/Node.js code, upload it, and Lambda runs it ONLY when triggered by EventBridge.
+
+**Think of it as an Automatic Security Guard:**
+- The alarm rings (EventBridge sends event)
+- The guard wakes up (Lambda cold start, ~200ms)
+- Performs the action (isolate server, revoke keys, block access)
+- Goes back to sleep (you pay $0 when idle)
+- If 10 alarms ring at once → 10 guards work simultaneously (auto-scales)
+
+### Why Lambda for Security?
+
+```
+TRADITIONAL APPROACH:                     LAMBDA APPROACH:
+┌────────────────────┐                   ┌────────────────────┐
+│ Run EC2 24/7       │                   │ Pay $0 when idle   │
+│ Install Python     │                   │ No servers to patch │
+│ Keep it patched    │                   │ Auto-scales to 1000 │
+│ Handle crashes     │                   │ Runs in 2 seconds  │
+│ Monitor uptime     │                   │ Built-in retry     │
+│                    │                   │                    │
+│ Cost: ~$70/month   │                   │ Cost: ~$2/month    │
+│ even when idle     │                   │ (pay per execution)│
+└────────────────────┘                   └────────────────────┘
+```
+
+### How Lambda Functions Work in This Project
+
+We have **4 Lambda functions**, each handling a different security scenario:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     LAMBDA SECURITY FUNCTIONS                        │
+│                                                                      │
+│  FUNCTION 1: guardduty-remediation                                  │
+│  ─────────────────────────────────                                  │
+│  Trigger: GuardDuty HIGH/CRITICAL finding                           │
+│  Actions:                                                            │
+│    1. Replace instance Security Group with ISOLATION SG             │
+│       (no ingress, no egress = total network cutoff)                │
+│    2. Create EBS snapshots of all volumes (forensic evidence)       │
+│    3. Tag instance: SecurityStatus=COMPROMISED                      │
+│    4. Send SNS alert to PagerDuty                                   │
+│  Runtime: Python 3.12 | Timeout: 300s | Memory: 256MB              │
+│                                                                      │
+│  FUNCTION 2: s3-remediation                                         │
+│  ──────────────────────────                                         │
+│  Trigger: S3 bucket found public (via Config/Security Hub)          │
+│  Actions:                                                            │
+│    1. Enable Block Public Access (all 4 settings = true)            │
+│    2. Enable KMS default encryption                                  │
+│    3. Log which bucket was fixed and why                            │
+│    4. Send Slack notification                                        │
+│  Runtime: Python 3.12 | Timeout: 60s | Memory: 128MB               │
+│                                                                      │
+│  FUNCTION 3: iam-remediation                                        │
+│  ────────────────────────────                                       │
+│  Trigger: IAM credential compromise detected                        │
+│  Actions:                                                            │
+│    1. List ALL access keys for the user                             │
+│    2. Disable every key (Status=Inactive)                           │
+│    3. Attach deny-all inline policy (blocks active sessions too)    │
+│    4. Send CRITICAL alert with user details                         │
+│  Runtime: Python 3.12 | Timeout: 60s | Memory: 128MB               │
+│                                                                      │
+│  FUNCTION 4: sg-remediation                                         │
+│  ───────────────────────────                                        │
+│  Trigger: Security group with 0.0.0.0/0 on SSH/RDP detected        │
+│  Actions:                                                            │
+│    1. Get current SG rules                                          │
+│    2. Find rules allowing 0.0.0.0/0 on port 22, 3389, or all      │
+│    3. Revoke those specific ingress rules                           │
+│    4. Send notification with SG ID and what was removed             │
+│  Runtime: Python 3.12 | Timeout: 60s | Memory: 128MB               │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Lambda Needs IAM Permissions
+
+Each Lambda function has an **execution role** that grants only the permissions it needs:
+
+```
+guardduty-remediation role:
+  ├── ec2:ModifyInstanceAttribute     (to replace security groups)
+  ├── ec2:CreateSnapshot              (forensic snapshots)
+  ├── ec2:CreateTags                  (tag as compromised)
+  ├── ec2:DescribeInstances           (find attached volumes)
+  ├── sns:Publish                     (send alerts)
+  └── securityhub:BatchUpdateFindings (update finding status)
+
+s3-remediation role:
+  ├── s3:PutPublicAccessBlock         (block public access)
+  ├── s3:PutBucketEncryption          (enable encryption)
+  └── sns:Publish                     (send alerts)
+
+iam-remediation role:
+  ├── iam:ListAccessKeys              (find all keys)
+  ├── iam:UpdateAccessKey             (disable keys)
+  ├── iam:PutUserPolicy               (attach deny-all)
+  └── sns:Publish                     (send alerts)
+```
+
+---
+
+## AWS Service 13: Amazon SNS (Security Alerting)
+
+### What Is SNS in Security Context?
+
+SNS (Simple Notification Service) is the **alert delivery system**. When Lambda detects and remediates a threat, SNS delivers the notification to your team through multiple channels simultaneously.
+
+**Think of it as a Fire Alarm System:**
+- Fire detected (security event)
+- Alarm sounds (SNS receives message)
+- Simultaneously: sprinklers activate (Slack), fire department called (PagerDuty), PA announces (email)
+- Everyone who needs to know gets notified in under 3 seconds
+
+### How SNS Works in the Security Dashboard
+
+```
+                    Security Event Detected
+                            │
+                            ▼
+                    ┌──────────────┐
+                    │  SNS TOPIC   │
+                    │  "security-  │
+                    │   critical"  │
+                    └──────┬───────┘
+                           │
+              ┌────────────┼────────────┐
+              │            │            │
+         ┌────┴────┐ ┌────┴────┐ ┌────┴─────┐
+         │  Slack  │ │PagerDuty│ │  Email   │
+         │ Webhook │ │  HTTPS  │ │  SMTP    │
+         │         │ │         │ │          │
+         │ #sec-   │ │ Creates │ │ security │
+         │ alerts  │ │ P1 inc  │ │ @co.com  │
+         │ channel │ │ pages   │ │          │
+         │         │ │ on-call │ │ Full     │
+         │ Quick   │ │ engineer│ │ detailed │
+         │ summary │ │         │ │ report   │
+         └─────────┘ └─────────┘ └──────────┘
+```
+
+### Two SNS Topics Used
+
+```
+TOPIC 1: security-critical-alerts
+  ├── Who subscribes: PagerDuty (HTTPS), CISO email, Slack #critical
+  ├── When triggered: Root login, credential compromise, crypto mining,
+  │                   CloudTrail disabled, data exfiltration
+  └── Response time: Immediate (P1 incident created)
+
+TOPIC 2: security-high-alerts
+  ├── Who subscribes: Slack #security-alerts, team email
+  ├── When triggered: Public S3 bucket, open SSH, IAM policy change,
+  │                   new findings in Security Hub
+  └── Response time: Same business day
+```
+
+### What the Alert Looks Like
+
+When GuardDuty detects crypto mining, your team gets:
+```
+SLACK MESSAGE:
+┌────────────────────────────────────────────────────┐
+│ 🚨 [AWS Security] GuardDuty: CryptoCurrency:EC2/  │
+│    BitcoinTool.B on i-0abc123def456                │
+│                                                     │
+│ Severity: 8.0 (HIGH)                               │
+│ Account: 111111111111 (Production)                  │
+│ Region: us-east-1                                   │
+│                                                     │
+│ Actions Taken (auto-remediated):                    │
+│ ✅ Isolated instance with SG sg-isolation           │
+│ ✅ Forensic snapshot: snap-0abc123                   │
+│ ✅ Tagged as COMPROMISED                             │
+│                                                     │
+│ Next Steps:                                         │
+│ • Review in AWS Detective for attack chain          │
+│ • Check CloudTrail for attacker activity            │
+│ • Determine root cause                              │
+│ • Decide: terminate or investigate further           │
+└────────────────────────────────────────────────────┘
+```
+
+---
+
+## AWS Service 14: Amazon Athena (Security Log Analysis)
+
+### What Is Athena in Security Context?
+
+Athena lets you run **SQL queries directly on CloudTrail logs stored in S3** — without setting up any database. This is how security teams do forensic investigations on millions of log events.
+
+**Think of it as a Search Engine for Your Audit Logs:**
+- CloudTrail writes billions of log entries to S3 over months/years
+- You can't open these files manually — they're compressed JSON
+- Athena lets you query them with SQL: "Show me all API calls from IP 185.x.x.x last Tuesday"
+- Results in seconds, costs ~$5 per TB scanned
+
+### How Athena Fits in the Security Architecture
+
+```
+CloudTrail logs every API call
+        │
+        ▼
+  S3 Bucket (years of logs, TBs of data)
+        │
+        ▼
+  Athena (serverless SQL engine)
+        │
+        ├── "Who logged in without MFA last month?"
+        ├── "What did attacker IP 185.x.x.x do?"
+        ├── "Show all CreateAccessKey events this quarter"
+        ├── "Find all failed login attempts by country"
+        └── "Which IAM user made the most API calls?"
+```
+
+### When Do You Use Athena vs CloudTrail Console?
+
+| CloudTrail Console (lookup-events) | Athena (SQL on S3) |
+|-------------------------------------|--------------------|
+| Last 90 days only | **Years of history** |
+| Simple filters (user, resource, event) | **Complex SQL joins, aggregations** |
+| Good for quick checks | **Good for investigations & compliance reports** |
+| Free | ~$5 per TB scanned |
+
+### Real-Time Investigation Example
+```sql
+-- An alert fires at 3 AM: "Unusual S3 data download"
+-- Security team uses Athena to investigate:
+
+-- Step 1: Who accessed the bucket?
+SELECT eventTime, userIdentity.arn, sourceIPAddress, eventName,
+       requestParameters
+FROM cloudtrail_logs
+WHERE eventSource = 's3.amazonaws.com'
+  AND eventTime BETWEEN '2026-03-02T02:00:00Z' AND '2026-03-02T05:00:00Z'
+  AND requestParameters LIKE '%customer-data%'
+ORDER BY eventTime;
+
+-- Step 2: What else did this IP address do?
+SELECT eventTime, eventName, eventSource, userIdentity.arn, errorCode
+FROM cloudtrail_logs
+WHERE sourceIPAddress = '185.xx.xx.xx'
+ORDER BY eventTime;
+
+-- Step 3: Were any new IAM users or keys created? (persistence check)
+SELECT eventTime, userIdentity.arn, eventName, responseElements
+FROM cloudtrail_logs
+WHERE eventName IN ('CreateUser', 'CreateAccessKey', 'CreateRole')
+  AND eventTime > '2026-03-01'
+ORDER BY eventTime;
+```
+
+---
+
+## AWS Service 15: Amazon SES (Security Report Delivery)
+
+### What Is SES in Security Context?
+
+SES (Simple Email Service) sends the **automated weekly security reports** to your leadership team. Every Monday morning, a Lambda function generates an HTML report with findings, compliance scores, and remediation stats, and SES delivers it.
+
+```
+FLOW:
+  EventBridge (cron: Monday 9 AM UTC)
+       │
+       ▼
+  Lambda function runs:
+    1. Queries Security Hub API → findings count by severity
+    2. Queries GuardDuty API → threat summary
+    3. Queries Config API → compliance status
+    4. Calculates trends (this week vs last week)
+    5. Generates HTML email report
+       │
+       ▼
+  SES sends email to:
+    ├── ciso@company.com
+    ├── devops-lead@company.com
+    └── security-team@company.com
+```
+
+### Why SES Instead of Just SNS?
+
+| SNS (real-time alerts) | SES (scheduled reports) |
+|------------------------|------------------------|
+| Short text messages | **Rich HTML emails** with tables, charts, colors |
+| Immediate: "FIRE!" | Scheduled: "Here's your weekly summary" |
+| Goes to Slack/PagerDuty/SMS | Goes to **email inboxes** |
+| No formatting control | Full HTML/CSS formatting |
+
+---
+
+## Complete AWS Services Summary for This Project
+
+| # | Service | Role in Project | Why It's Needed |
+|---|---------|----------------|-----------------|
+| 1 | **Security Hub** | Central aggregator | Single dashboard for ALL findings from ALL services |
+| 2 | **GuardDuty** | Threat detection | ML-based 24/7 monitoring of VPC, DNS, CloudTrail |
+| 3 | **CloudTrail** | Audit logging | Records every API call — who, what, when, from where |
+| 4 | **SCPs** | Organization guardrails | Prevents dangerous actions even by admins |
+| 5 | **IAM Policies** | Access control | Least privilege — who can do what |
+| 6 | **CloudWatch** | Metrics & alarms | Security metric filters + alarms on CloudTrail logs |
+| 7 | **Inspector** | Vulnerability scanning | Finds CVEs in EC2, ECR images, Lambda code |
+| 8 | **Macie** | Data discovery | Finds PII/sensitive data in S3 buckets |
+| 9 | **Detective** | Investigation | Visual attack graphs for forensic analysis |
+| 10 | **Config** | Compliance | Monitors resource configurations, auto-remediates drift |
+| 11 | **EventBridge** | Event routing | Routes security events to Lambda/SNS (the nervous system) |
+| 12 | **Lambda** | Auto-remediation | Runs remediation code in seconds, serverless |
+| 13 | **SNS** | Alerting | Delivers alerts to Slack, PagerDuty, email simultaneously |
+| 14 | **Athena** | Log analysis | SQL queries on CloudTrail logs for investigations |
+| 15 | **SES** | Report delivery | Sends weekly HTML security reports to leadership |
+| 16 | **KMS** | Encryption | Encrypts CloudTrail logs, S3 buckets, EBS snapshots |
+| 17 | **S3** | Storage | Stores CloudTrail logs, Config snapshots, reports |
+| 18 | **IAM Access Analyzer** | Permission audit | Finds overpermissioned resources and external access |
+
+---
+
 # Part 3 — Real-Time Project: AWS Security Management Dashboard
 
 > **Objective:** Build a complete security monitoring and auto-remediation system using AWS-native services. This is what enterprises run in production.
