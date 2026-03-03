@@ -129,6 +129,19 @@ User types www.myapp.com
 | [ECR](ECR/) | Container Registry | Image scanning, lifecycle policies |
 | [Systems-Manager](Systems-Manager/) | Operations Hub | Session Manager, patching, Parameter Store |
 
+### Additional Services
+| Service | Folder | Key Topics |
+|---------|--------|------------|
+| [CloudFormation](CloudFormation/) | AWS-Native IaC | Stacks, nested stacks, change sets, drift detection |
+| [CodePipeline](CodePipeline/) | AWS CI/CD Suite | CodeCommit, CodeBuild, CodeDeploy, CodePipeline |
+| [Elastic-Beanstalk](Elastic-Beanstalk/) | PaaS Deployment | Platforms, .ebextensions, deployment policies |
+| [OpsWorks](OpsWorks/) | Config Management | Chef Automate, Puppet Enterprise, Stacks |
+| [Redshift](Redshift/) | Data Warehousing | Columnar storage, Spectrum, Serverless |
+| [SES](SES/) | Email Service | SMTP/API, DKIM/SPF/DMARC, templates |
+| [Snowball](Snowball/) | Physical Data Transfer | Snow Family, edge computing, OpsHub |
+| [Storage-Gateway](Storage-Gateway/) | Hybrid Storage | S3 File Gateway, Volume Gateway, Tape Gateway |
+| [AWS-Migration](AWS-Migration/) | Cloud Migration | DMS, MGN, SCT, DataSync, 6 Rs, Migration Hub |
+
 ---
 
 ## 21 Practical AWS Scenarios

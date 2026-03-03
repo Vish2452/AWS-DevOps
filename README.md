@@ -34,16 +34,27 @@ AWS-DevOps/
 │   ├── CloudTrail/                 #   API Audit Logging
 │   ├── KMS/                        #   Key Management Service
 │   ├── AWS-Backup/                 #   Centralized Backup
+│   ├── AWS-Migration/              #   DMS, MGN, DataSync, Migration Hub, 6 Rs
+│   ├── CloudFormation/             #   AWS-native IaC (stacks, change sets, drift)
+│   ├── CodePipeline/               #   AWS CI/CD: CodeCommit, CodeBuild, CodeDeploy
+│   ├── Elastic-Beanstalk/          #   PaaS deployment (platforms, .ebextensions)
+│   ├── OpsWorks/                   #   Config management as a service (Chef, Puppet)
+│   ├── Redshift/                   #   Data Warehousing (columnar, Spectrum, Serverless)
+│   ├── SES/                        #   Simple Email Service (SMTP, DKIM, templates)
+│   ├── Snowball/                   #   Snow Family physical data transfer & edge
+│   ├── Storage-Gateway/            #   Hybrid cloud storage (File, Volume, Tape)
 │   ├── scenarios/                  #   21 practical AWS scenarios
 │   └── project-3tier-web-app/      #   Real-time: Scalable 3-Tier Web App
 ├── 05-AWS-Advanced-Networking/     # Transit Gateway, VPC Peering, VPN + multi-region project
 ├── 06-Docker/                      # Containers, Compose, multi-stage builds + voting app project
 ├── 07-Jenkins-CICD/                # Pipelines, plugins, agents + Java microservice project
+│   └── continuous-testing/         #   Maven, Selenium, headless browser testing
 ├── 08-GitHub-Actions-CICD/         # Workflows, OIDC, runners + full CI/CD project
 ├── 09-Terraform/                   # IaC, modules, state, workspaces + multi-env project
 ├── 09A-Liquibase/                  # DB migrations, changelogs, rollback + RDS pipeline project
 ├── 10-Kubernetes/                  # EKS, deployments, services, RBAC + production cluster project
 ├── 11-Monitoring-Observability/    # Prometheus, Grafana, EFK + full observability project
+│   └── nagios/                     #   Nagios monitoring, NRPE plugins, service checks
 ├── 12-Security-DevSecOps/          # SonarQube, Trivy, Checkov, Vault + DevSecOps pipeline project
 ├── 13-Lambda-Glue-Data-Infra/     # Serverless ETL, Step Functions + data pipeline project
 ├── 14-Capstone-Projects/          # CDP, Banking, E-Commerce, IoT — pick one
@@ -54,6 +65,7 @@ AWS-DevOps/
 ├── 15-AWS-ECS/                    # ECS Fargate, microservices, service discovery + 2-tier app
 ├── 16-Python-for-DevOps/          # boto3, Lambda, FinOps, ClamAV + automation projects
 ├── 17-Ansible-Packer/             # Ansible roles, Vault, Packer golden AMI + CI/CD pipeline
+│   └── puppet-basics/             #   Puppet master-agent, manifests, modules, file server
 ├── 18-AIOps/                      # AI tools, anomaly detection, self-healing + ChatOps
 ├── 19-SRE-Incident-Management/    # SLI/SLO, error budgets, war rooms, postmortems, chaos engineering
 ├── 20-AWS-Best-Practices/         # Well-Architected, FinOps, DR, security hardening, production project
