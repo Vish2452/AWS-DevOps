@@ -1,4 +1,4 @@
-# Module 4 — AWS Core Services (3 Weeks)
+# Module 4 — AWS Core Services (4 Weeks)
 
 > **Objective:** Master the foundational AWS services that every DevOps engineer uses daily. Build a scalable 3-tier web application.
 
@@ -106,13 +106,28 @@ User types www.myapp.com
 | Service | Folder | Key Topics |
 |---------|--------|------------|
 | [RDS](RDS/) | Relational Database Service | Multi-AZ, read replicas, Aurora |
+| [DynamoDB](DynamoDB/) | NoSQL Database | Partition keys, GSI, Streams, TTL |
+| [ElastiCache](ElastiCache/) | In-Memory Cache | Redis vs Memcached, session store |
 | [Route53](Route53/) | DNS & Domain Management | Routing policies, health checks |
 | [Lambda](Lambda/) | Serverless Compute | Triggers, layers, concurrency |
-| [CloudWatch](CloudWatch/) | Monitoring & Logging | Metrics, alarms, dashboards |
+| [API-Gateway](API-Gateway/) | API Management | REST, HTTP, WebSocket APIs |
+| [SQS](SQS/) | Simple Queue Service | Standard vs FIFO, DLQ, scaling |
 | [SNS](SNS/) | Simple Notification Service | Topics, subscriptions, fan-out |
+| [EventBridge](EventBridge/) | Event Bus | Rules, scheduling, cross-account |
+| [CloudWatch](CloudWatch/) | Monitoring & Logging | Metrics, alarms, dashboards |
 | [CloudFront](CloudFront/) | CDN | Distributions, caching, invalidation |
 | [CloudTrail](CloudTrail/) | API Audit Logging | Event history, S3 storage |
+
+### Week 4: Security, Compliance & Operations
+| Service | Folder | Key Topics |
+|---------|--------|------------|
 | [KMS](KMS/) | Key Management Service | CMK, envelope encryption |
+| [Secrets-Manager](Secrets-Manager/) | Secrets Management | Auto-rotation, cross-account |
+| [WAF](WAF/) | Web Application Firewall | Rules, rate limiting, Shield |
+| [AWS-Config](AWS-Config/) | Compliance & Audit | Config rules, auto-remediation |
+| [STS](STS/) | Security Token Service | AssumeRole, federation, temp creds |
+| [ECR](ECR/) | Container Registry | Image scanning, lifecycle policies |
+| [Systems-Manager](Systems-Manager/) | Operations Hub | Session Manager, patching, Parameter Store |
 
 ---
 
