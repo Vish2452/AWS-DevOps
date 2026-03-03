@@ -33,6 +33,8 @@ AWS-DevOps/
 │   ├── CloudFront/                 #   CDN
 │   ├── CloudTrail/                 #   API Audit Logging
 │   ├── KMS/                        #   Key Management Service
+│   ├── ECS/                        #   Elastic Container Service (Fargate, task defs, services)
+│   ├── EKS/                        #   Elastic Kubernetes Service (clusters, Helm, IRSA)
 │   ├── AWS-Backup/                 #   Centralized Backup
 │   ├── AWS-Migration/              #   DMS, MGN, DataSync, Migration Hub, 6 Rs
 │   ├── CloudFormation/             #   AWS-native IaC (stacks, change sets, drift)

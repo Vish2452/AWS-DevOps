@@ -127,6 +127,8 @@ User types www.myapp.com
 | [AWS-Config](AWS-Config/) | Compliance & Audit | Config rules, auto-remediation |
 | [STS](STS/) | Security Token Service | AssumeRole, federation, temp creds |
 | [ECR](ECR/) | Container Registry | Image scanning, lifecycle policies |
+| [ECS](ECS/) | Elastic Container Service | Fargate, task definitions, services, auto scaling |
+| [EKS](EKS/) | Elastic Kubernetes Service | Managed K8s, node groups, IRSA, Helm, Ingress |
 | [Systems-Manager](Systems-Manager/) | Operations Hub | Session Manager, patching, Parameter Store |
 
 ### Additional Services
